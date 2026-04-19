@@ -1,0 +1,2 @@
+D:/Code/study_pomodoro_record/android/app/.cxx/debug/195m733c/x86_64/CMakeFiles/edit_cache.dir
+D:/Code/study_pomodoro_record/android/app/.cxx/debug/195m733c/x86_64/CMakeFiles/rebuild_cache.dir

@@ -1,0 +1,17 @@
+# Flutter / Dart
+.dart_tool/
+.flutter-plugins
+.flutter-plugins-dependencies
+.packages
+.pub/
+build/
+
+# Android / IDE
+android/.gradle/
+android/local.properties
+*.iml
+.idea/
+
+# OS
+Thumbs.db
+desktop.ini

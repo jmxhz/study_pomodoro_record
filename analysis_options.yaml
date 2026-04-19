@@ -1,0 +1,25 @@
+﻿include: package:flutter_lints/flutter.yaml
+
+analyzer:
+  exclude:
+    - lib/core/db/app_database.dart
+    - lib/core/utils/reward_progress_calculator.dart
+    - lib/data/repositories/csv_service.dart
+    - lib/features/add_record/pages/add_record_page.dart
+    - lib/features/add_record/controllers/record_entry_controller.dart
+    - lib/features/add_record/controllers/record_form_controller.dart
+    - lib/features/add_record/pages/record_entry_page.dart
+    - lib/features/add_record/pages/study_entry_page.dart
+    - lib/features/records/pages/records_page.dart
+    - lib/features/settings/controllers/settings_controller.dart
+    - lib/features/settings/pages/settings_home_page.dart
+    - lib/features/settings/pages/settings_page.dart
+    - lib/features/settings/pages/manage_*_clean_page.dart
+    - lib/features/settings/pages/manage_*_page.dart
+    - lib/features/settings/widgets/option_edit_dialog.dart
+    - lib/features/settings/widgets/setting_dialogs.dart
+
+linter:
+  rules:
+    prefer_single_quotes: true
+    avoid_print: true
