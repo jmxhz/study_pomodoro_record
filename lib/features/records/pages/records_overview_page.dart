@@ -62,7 +62,8 @@ class _RecordsBodyState extends State<_RecordsBody> {
             (value) => value.statistics);
 
     if (isLoading && statistics == null) {
-      return const LoadingView(message: '姝ｅ湪姹囨€荤粺璁?..');
+      return const LoadingView(
+          message: '\u6b63\u5728\u6c47\u603b\u8bb0\u5f55...');
     }
 
     if (errorMessage != null && statistics == null) {
@@ -91,7 +92,7 @@ class _RecordsBodyState extends State<_RecordsBody> {
           ),
           const SizedBox(height: 16),
           DualMetricSummaryCard(
-            leftTitle: '鎬荤暘鑼勯挓鏁伴噺',
+            leftTitle: '\u603b\u756a\u8304\u949f\u6570\u91cf',
             leftUnit: '\u4e2a',
             leftSummary: statistics.totalPomodoro,
             rightTitle: '\u603b\u79ef\u5206\u6570\u91cf',
@@ -119,10 +120,10 @@ class _RecordsBodyState extends State<_RecordsBody> {
             selector: (_, value) => value.contentSummaries,
             builder: (context, contentSummaries, child) {
               return _DeferredSection(
-                title: '鍐呭缁村害缁熻',
+                title: '\u5185\u5bb9\u6c47\u603b',
                 subtitle: contentSummaries.isEmpty
-                    ? '褰撳墠鍛ㄦ湡鏆傛棤鍐呭缁熻'
-                    : '鍏?${contentSummaries.length} 涓唴瀹归」',
+                    ? '\u5f53\u524d\u5468\u671f\u6682\u65e0\u5185\u5bb9\u6c47\u603b'
+                    : '\u5171 ${contentSummaries.length} \u9879\u5185\u5bb9\u3002',
                 icon: Icons.menu_book_outlined,
                 child: _ContentSummaryList(contentSummaries: contentSummaries),
               );
@@ -141,7 +142,7 @@ class _RecordsBodyState extends State<_RecordsBody> {
               final improvementCount = tagData.improvements
                   .fold<int>(0, (sum, item) => sum + item.count);
               return _DeferredSection(
-                title: '澶嶇洏鏍囩',
+                title: '\u8584\u5f31\u70b9\u4e0e\u6539\u8fdb',
                 subtitle:
                     '\u8584\u5f31\u70b9 $weaknessCount \u6b21\uff0c\u6539\u8fdb\u63aa\u65bd $improvementCount \u6b21',
                 icon: Icons.fact_check_outlined,
@@ -151,7 +152,7 @@ class _RecordsBodyState extends State<_RecordsBody> {
           ),
           const SizedBox(height: 16),
           _DeferredSection(
-            title: '鏄庣粏鍒楄〃',
+            title: '\u8be6\u7ec6\u8bb0\u5f55',
             subtitle:
                 '\u5f53\u524d\u5468\u671f ${statistics.details.length} \u6761\u8bb0\u5f55',
             icon: Icons.analytics_outlined,
@@ -212,17 +213,17 @@ class _RecordsBodyState extends State<_RecordsBody> {
       context: context,
       builder: (context) {
         return AlertDialog(
-          title: const Text('鍒犻櫎璁板綍'),
+          title: const Text('\u5220\u9664\u8bb0\u5f55'),
           content: Text(
-              '纭鍒犻櫎 ${FormatUtils.formatDateTime(record.occurredAt)} 杩欐潯璁板綍鍚楋紵'),
+              '\u786e\u8ba4\u5220\u9664 ${FormatUtils.formatDateTime(record.occurredAt)} \u8fd9\u6761\u8bb0\u5f55\u5417\uff1f'),
           actions: [
             TextButton(
               onPressed: () => Navigator.of(context).pop(false),
-              child: const Text('鍙栨秷'),
+              child: const Text('\u53d6\u6d88'),
             ),
             FilledButton(
               onPressed: () => Navigator.of(context).pop(true),
-              child: const Text('鍒犻櫎'),
+              child: const Text('\u5220\u9664'),
             ),
           ],
         );
@@ -260,7 +261,8 @@ class _PeriodFilterCard extends StatelessWidget {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text('缁熻鑼冨洿', style: Theme.of(context).textTheme.titleMedium),
+            Text('\u7edf\u8ba1\u8303\u56f4',
+                style: Theme.of(context).textTheme.titleMedium),
             const SizedBox(height: 12),
             _GranularitySelector(
               value: controller.granularity,
@@ -355,7 +357,7 @@ class _CategorySummarySection extends StatelessWidget {
                           ),
                           Expanded(
                             child: _CategoryMetricPanel(
-                              title: '绉垎',
+                              title: '\u79ef\u5206',
                               valueText: '${item.points.current} \u5206',
                               summary: item.points,
                             ),
@@ -848,7 +850,7 @@ class _ContentSummaryList extends StatelessWidget {
   Widget build(BuildContext context) {
     if (contentSummaries.isEmpty) {
       return const EmptyStateCard(
-        title: '鏆傛棤鍐呭缁熻',
+        title: '\u6682\u65e0\u5185\u5bb9\u6c47\u603b',
         subtitle:
             '\u5f53\u524d\u5468\u671f\u8fd8\u6ca1\u6709\u5185\u5bb9\u7ef4\u5ea6\u7684\u5b66\u4e60\u8bb0\u5f55\u3002',
         icon: Icons.menu_book_outlined,
@@ -886,14 +888,16 @@ class _TagStatsEntrySection extends StatelessWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text('澶嶇洏鏍囩', style: Theme.of(context).textTheme.titleLarge),
+        Text('\u8584\u5f31\u70b9\u4e0e\u6539\u8fdb',
+            style: Theme.of(context).textTheme.titleLarge),
         const SizedBox(height: 8),
         Card(
           child: ListTile(
             leading: const Icon(Icons.fact_check_outlined),
-            title: const Text('钖勫急鐐逛笌鏀硅繘鎺柦'),
+            title: const Text(
+                '\u67e5\u770b\u8584\u5f31\u70b9\u4e0e\u6539\u8fdb\u8be6\u60c5'),
             subtitle: Text(
-                '钖勫急鐐硅褰?$weaknessCount 娆★紝鏀硅繘鎺柦璁板綍 $improvementCount 娆★紝鐐瑰嚮鏌ョ湅璇︽儏'),
+                '\u8584\u5f31\u70b9\u5171 $weaknessCount \u6b21\uff0c\u6539\u8fdb\u63aa\u65bd\u5171 $improvementCount \u6b21\u8bb0\u5f55'),
             trailing: const Icon(Icons.chevron_right),
             onTap: () {
               Navigator.of(context).push(
@@ -969,11 +973,12 @@ class _DetailListBodyState extends State<_DetailListBody> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text('鏄庣粏鍒楄〃', style: Theme.of(context).textTheme.titleLarge),
+        Text('\u8be6\u7ec6\u8bb0\u5f55',
+            style: Theme.of(context).textTheme.titleLarge),
         const SizedBox(height: 8),
         if (records.isEmpty)
           const EmptyStateCard(
-            title: '褰撳墠鍛ㄦ湡鏆傛棤璁板綍',
+            title: '\u5f53\u524d\u5468\u671f\u6682\u65e0\u8bb0\u5f55',
             subtitle:
                 '\u5148\u53bb\u201c\u65b0\u589e\u8bb0\u5f55\u201d\u9875\u8bb0\u4e0a\u4e00\u6761\uff0c\u7edf\u8ba1\u4f1a\u81ea\u52a8\u5237\u65b0\u3002',
             icon: Icons.analytics_outlined,
@@ -1013,7 +1018,7 @@ class _DetailListBodyState extends State<_DetailListBody> {
                     _visibleCount = _pageSize;
                   });
                 },
-                child: const Text('鏀惰捣鏄庣粏鍒楄〃'),
+                child: const Text('\u6536\u8d77\u8be6\u7ec6\u8bb0\u5f55'),
               ),
             ),
           ],
@@ -1036,10 +1041,10 @@ class _GranularitySelector extends StatelessWidget {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final options = const [
-      (TimeGranularity.day, '姣忔棩'),
-      (TimeGranularity.week, '姣忓懆'),
-      (TimeGranularity.month, '姣忔湀'),
-      (TimeGranularity.year, '姣忓勾'),
+      (TimeGranularity.day, '\u65e5'),
+      (TimeGranularity.week, '\u5468'),
+      (TimeGranularity.month, '\u6708'),
+      (TimeGranularity.year, '\u5e74'),
     ];
 
     return Container(
@@ -1195,7 +1200,7 @@ class _RecordItemCard extends StatelessWidget {
                   ),
                 ),
                 PopupMenuButton<String>(
-                  tooltip: '鏇村鎿嶄綔',
+                  tooltip: '\u66f4\u591a\u64cd\u4f5c',
                   color: theme.colorScheme.surface,
                   surfaceTintColor: Colors.transparent,
                   elevation: 2,
@@ -1217,11 +1222,11 @@ class _RecordItemCard extends StatelessWidget {
                   itemBuilder: (context) => const [
                     PopupMenuItem<String>(
                       value: 'edit',
-                      child: Text('缂栬緫'),
+                      child: Text('\u7f16\u8f91'),
                     ),
                     PopupMenuItem<String>(
                       value: 'delete',
-                      child: Text('鍒犻櫎'),
+                      child: Text('\u5220\u9664'),
                     ),
                   ],
                   child: const Padding(
@@ -1246,7 +1251,7 @@ class _RecordItemCard extends StatelessWidget {
                 children: [
                   _CompactMetaTag(
                       label:
-                          '${record.categoryNameSnapshot} 路 ${record.contentNameSnapshot}'),
+                          '${record.categoryNameSnapshot} · ${record.contentNameSnapshot}'),
                   _CompactMetaTag(label: studyType.shortLabel),
                   _CompactMetaTag(
                     label: '${record.pomodoroCount} \u4e2a\u756a\u8304',
@@ -1255,7 +1260,7 @@ class _RecordItemCard extends StatelessWidget {
                   _CompactMetaTag(
                     label: rewardLabel.isEmpty
                         ? breakLabel
-                        : '$breakLabel 路 $rewardLabel',
+                        : '$breakLabel · $rewardLabel',
                   ),
                 ],
               ),

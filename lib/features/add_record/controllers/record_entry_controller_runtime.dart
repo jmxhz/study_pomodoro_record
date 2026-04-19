@@ -216,23 +216,13 @@ class RecordEntryController extends ChangeNotifier {
     notifyListeners();
   }
 
-  void toggleWeaknessTag(String tag) {
-    if (weaknessTags.contains(tag)) {
-      weaknessTags =
-          weaknessTags.where((item) => item != tag).toList(growable: false);
-    } else {
-      weaknessTags = [...weaknessTags, tag];
-    }
+  void setWeaknessTag(String? tag) {
+    weaknessTags = tag == null ? const [] : [tag];
     notifyListeners();
   }
 
-  void toggleImprovementTag(String tag) {
-    if (improvementTags.contains(tag)) {
-      improvementTags =
-          improvementTags.where((item) => item != tag).toList(growable: false);
-    } else {
-      improvementTags = [...improvementTags, tag];
-    }
+  void setImprovementTag(String? tag) {
+    improvementTags = tag == null ? const [] : [tag];
     notifyListeners();
   }
 
@@ -367,8 +357,11 @@ class RecordEntryController extends ChangeNotifier {
     detailAmountText = record.detailAmountText;
     questionCount = record.questionCount;
     wrongCount = record.wrongCount;
-    weaknessTags = List<String>.from(record.weaknessTags);
-    improvementTags = List<String>.from(record.improvementTags);
+    weaknessTags =
+        record.weaknessTags.isEmpty ? const [] : [record.weaknessTags.first];
+    improvementTags = record.improvementTags.isEmpty
+        ? const []
+        : [record.improvementTags.first];
     notes = record.notes;
     _autoTrackCurrentTime = false;
     occurredAt = record.occurredAt;
@@ -624,7 +617,6 @@ class RecordEntryController extends ChangeNotifier {
     improvementTags = const [];
     notes = null;
   }
-
 
   void _startClockTicker() {
     if (isEditMode) {
