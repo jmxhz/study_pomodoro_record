@@ -676,7 +676,7 @@ class _StudyDetailSectionState extends State<_StudyDetailSection> {
             const SizedBox(height: 12),
             Text(
               '\u9ed8\u8ba4\u6536\u8d77\uff0c\u6309\u9700\u5c55\u5f00\u586b\u5199\u3002',
-              style: theme.textTheme.bodyMedium?.copyWith(
+              style: theme.textTheme.bodySmall?.copyWith(
                 color: theme.colorScheme.onSurfaceVariant,
                 height: 1.3,
               ),
