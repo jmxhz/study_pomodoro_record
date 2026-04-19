@@ -179,7 +179,8 @@ class _RecordFormBody extends StatelessWidget {
                       ),
                     ],
                     const SizedBox(height: 20),
-                    _SectionTitle(title: '\u672c\u6b21\u83b7\u5f97\u79ef\u5206'),
+                    _SectionTitle(
+                        title: '\u672c\u6b21\u83b7\u5f97\u79ef\u5206'),
                     const SizedBox(height: 8),
                     _PointsSummarySection(controller: controller),
                     const SizedBox(height: 20),
@@ -646,10 +647,10 @@ class _StudyDetailSectionState extends State<_StudyDetailSection> {
               title: '\u8584\u5f31\u70b9\u3001\u6539\u8fdb\u63aa\u65bd',
               description: '\u590d\u76d8\u6807\u7b7e',
               child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   _SingleTagSelector(
-                    title:
-                        '\u8584\u5f31\u70b9\uff08\u4ec5\u80fd\u9009 1 \u9879\uff09',
+                    title: '\u8584\u5f31\u70b9',
                     selectedTag: controller.weaknessTags.isEmpty
                         ? null
                         : controller.weaknessTags.first,
@@ -660,8 +661,7 @@ class _StudyDetailSectionState extends State<_StudyDetailSection> {
                   ),
                   const SizedBox(height: 12),
                   _SingleTagSelector(
-                    title:
-                        '\u6539\u8fdb\u63aa\u65bd\uff08\u4ec5\u80fd\u9009 1 \u9879\uff09',
+                    title: '\u6539\u8fdb\u63aa\u65bd',
                     selectedTag: controller.improvementTags.isEmpty
                         ? null
                         : controller.improvementTags.first,
@@ -708,7 +708,8 @@ class _DetailExpandableGroup extends StatelessWidget {
     return Container(
       width: double.infinity,
       decoration: BoxDecoration(
-        color: theme.colorScheme.surfaceContainerHighest.withValues(alpha: 0.22),
+        color:
+            theme.colorScheme.surfaceContainerHighest.withValues(alpha: 0.22),
         borderRadius: BorderRadius.circular(22),
       ),
       child: Theme(
@@ -744,7 +745,13 @@ class _DetailExpandableGroup extends StatelessWidget {
           ),
           children: [
             const SizedBox(height: 2),
-            child,
+            Align(
+              alignment: Alignment.centerLeft,
+              child: SizedBox(
+                width: double.infinity,
+                child: child,
+              ),
+            ),
           ],
         ),
       ),
@@ -776,16 +783,19 @@ class _SingleTagSelector extends StatelessWidget {
           Text('\u6682\u65e0\u53ef\u9009\u9879',
               style: Theme.of(context).textTheme.bodySmall)
         else
-          Wrap(
-            spacing: 8,
-            runSpacing: 8,
-            children: options.map((item) {
-              return ChoiceChip(
-                label: Text(item),
-                selected: selectedTag == item,
-                onSelected: (selected) => onChanged(selected ? item : null),
-              );
-            }).toList(growable: false),
+          SizedBox(
+            width: double.infinity,
+            child: Wrap(
+              spacing: 8,
+              runSpacing: 8,
+              children: options.map((item) {
+                return ChoiceChip(
+                  label: Text(item),
+                  selected: selectedTag == item,
+                  onSelected: (selected) => onChanged(selected ? item : null),
+                );
+              }).toList(growable: false),
+            ),
           ),
       ],
     );
