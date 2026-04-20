@@ -127,12 +127,33 @@ class LifeRecordEntryController extends ChangeNotifier {
         feedbackOptionId: null,
         feedbackNameSnapshot: null,
         pomodoroCount: 1,
-        points: option.points + thresholdBonus,
+        points: option.points,
         notes: notes,
         createdAt: now,
         updatedAt: now,
       );
       await studyRecordRepository.insertRecord(record);
+      if (thresholdBonus > 0) {
+        final bonusRecord = StudyRecord(
+          recordKind: 'life_bonus',
+          lifeOptionId: null,
+          occurredAt: occurredAt,
+          categoryId: null,
+          categoryNameSnapshot: '生活奖励',
+          contentOptionId: null,
+          contentNameSnapshot: '生活达标奖励',
+          rewardOptionId: null,
+          rewardNameSnapshot: '',
+          feedbackOptionId: null,
+          feedbackNameSnapshot: null,
+          pomodoroCount: 0,
+          points: thresholdBonus,
+          notes: '生活积分当日首次达标奖励',
+          createdAt: now,
+          updatedAt: now,
+        );
+        await studyRecordRepository.insertRecord(bonusRecord);
+      }
       dataSyncNotifier.notifyChanged();
       _resetForNext();
     } finally {

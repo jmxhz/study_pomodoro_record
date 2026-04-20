@@ -55,7 +55,7 @@ class StudyRecordRepository {
     final db = await _database.database;
     return Sqflite.firstIntValue(
           await db.rawQuery(
-            "SELECT COALESCE(SUM(points), 0) FROM study_records WHERE record_kind = 'study'",
+            "SELECT COALESCE(SUM(points), 0) FROM study_records WHERE record_kind IN ('study', 'life_bonus')",
           ),
         ) ??
         0;

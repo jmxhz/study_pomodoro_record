@@ -987,7 +987,7 @@ class _LifePointsSummarySection extends StatelessWidget {
           earnedPoints: data.currentEarnedPoints,
         );
         final reward = _rewardText(
-          earnedPoints: data.currentEarnedPoints,
+          todayPoints: data.currentPoints,
         );
         final suggestions = _missingSuggestions(data.completedHabitKeys);
 
@@ -1209,30 +1209,27 @@ class _LifePointsSummarySection extends StatelessWidget {
   }
 
   String _rewardText({
-    required int earnedPoints,
+    required int todayPoints,
   }) {
-    if (earnedPoints <= 0) {
-      return '本次选择今日已记录或未选择，不会新增积分。';
-    }
-    if (earnedPoints == 1) {
+    if (todayPoints <= 0) {
       return '你保住了今天的最低行动线，避免了完全放弃。';
     }
-    if (earnedPoints == 2) {
+    if (todayPoints <= 2) {
+      return '你保住了今天的最低行动线，避免了完全放弃。';
+    }
+    if (todayPoints <= 4) {
       return '你正在把生活节奏从“被手机和拖延带走”拉回到自己手里。';
     }
-    if (earnedPoints == 3) {
+    if (todayPoints <= 6) {
       return '你切断了一次容易失控的惯性，这比单纯多坚持几分钟更有价值。';
     }
-    if (earnedPoints == 4) {
+    if (todayPoints <= 7) {
       return '你完成了一次对生活节奏的关键保护。今天最重要的边界没有被打破。';
     }
-    if (earnedPoints <= 7) {
+    if (todayPoints <= 9) {
       return '你减少了一部分无意识消耗，今晚会比完全失控更容易恢复。';
     }
-    if (earnedPoints <= 9) {
-      return '你已经把今天的大部分节奏拿回来了。再补一个关键动作，就能达标。';
-    }
-    if (earnedPoints == 10) {
+    if (todayPoints == 10) {
       return '今天可以给自己一个低刺激奖励，比如听音乐、泡脚、轻松拉伸，但不要用短视频或游戏作为奖励。';
     }
     return '今天的节奏非常完整。保持这种低消耗状态，比临时兴奋更能支持长期学习。';
