@@ -4,6 +4,7 @@ import '../../../app/app_services.dart';
 import '../../../data/models/category_option.dart';
 import '../../../data/models/content_option.dart';
 import '../../../data/models/improvement_option.dart';
+import '../../../data/models/life_option.dart';
 import '../../../data/models/redeem_reward.dart';
 import '../../../data/models/reward_option.dart';
 import '../../../data/models/weakness_option.dart';
@@ -34,6 +35,7 @@ class SettingsController extends ChangeNotifier {
   List<WeaknessOption> weaknessOptions = const [];
   List<ImprovementOption> improvementOptions = const [];
   List<RedeemReward> redeemRewards = const [];
+  List<LifeOption> lifeOptions = const [];
   int longBreakEvery = 4;
   int sessionGapMinutes = 90;
   String? backupDirectoryPath;
@@ -52,6 +54,7 @@ class SettingsController extends ChangeNotifier {
         optionsRepository.getWeaknessOptions(),
         optionsRepository.getImprovementOptions(),
         optionsRepository.getRedeemRewards(),
+        optionsRepository.getLifeOptions(),
         optionsRepository.getLongBreakEvery(),
         optionsRepository.getSessionGapMinutes(),
         optionsRepository.getBackupDirectoryPath(),
@@ -64,10 +67,11 @@ class SettingsController extends ChangeNotifier {
       weaknessOptions = results[4] as List<WeaknessOption>;
       improvementOptions = results[5] as List<ImprovementOption>;
       redeemRewards = results[6] as List<RedeemReward>;
-      longBreakEvery = results[7] as int;
-      sessionGapMinutes = results[8] as int;
-      backupDirectoryPath = results[9] as String?;
-      lastTransferDirectoryPath = results[10] as String?;
+      lifeOptions = results[7] as List<LifeOption>;
+      longBreakEvery = results[8] as int;
+      sessionGapMinutes = results[9] as int;
+      backupDirectoryPath = results[10] as String?;
+      lastTransferDirectoryPath = results[11] as String?;
     } catch (error) {
       errorMessage = error.toString();
     } finally {
@@ -562,6 +566,64 @@ class SettingsController extends ChangeNotifier {
     items.insert(newIndex, item);
     await _runBusyAction(() async {
       await optionsRepository.reorderRedeemRewards(items);
+      await load();
+      dataSyncNotifier.notifyChanged();
+    });
+  }
+
+  Future<void> addLifeOption({
+    required String name,
+    required int points,
+    required bool isEnabled,
+  }) async {
+    await _runBusyAction(() async {
+      final now = DateTime.now();
+      final sortOrder = await optionsRepository.nextLifeOptionSortOrder();
+      await optionsRepository.insertLifeOption(
+        LifeOption(
+          name: name,
+          points: points,
+          sortOrder: sortOrder,
+          isEnabled: isEnabled,
+          createdAt: now,
+          updatedAt: now,
+        ),
+      );
+      await load();
+      dataSyncNotifier.notifyChanged();
+    });
+  }
+
+  Future<void> updateLifeOption(LifeOption item) async {
+    await _runBusyAction(() async {
+      await optionsRepository.updateLifeOption(
+        item.copyWith(updatedAt: DateTime.now()),
+      );
+      await load();
+      dataSyncNotifier.notifyChanged();
+    });
+  }
+
+  Future<void> deleteLifeOption(LifeOption item) async {
+    if (item.id == null) {
+      return;
+    }
+    await _runBusyAction(() async {
+      await optionsRepository.deleteLifeOption(item.id!);
+      await load();
+      dataSyncNotifier.notifyChanged();
+    });
+  }
+
+  Future<void> reorderLifeOptions(int oldIndex, int newIndex) async {
+    final items = [...lifeOptions];
+    if (newIndex > oldIndex) {
+      newIndex -= 1;
+    }
+    final item = items.removeAt(oldIndex);
+    items.insert(newIndex, item);
+    await _runBusyAction(() async {
+      await optionsRepository.reorderLifeOptions(items);
       await load();
       dataSyncNotifier.notifyChanged();
     });

@@ -5,11 +5,73 @@ import '../../../app/app_services.dart';
 import '../../../core/utils/format_utils.dart';
 import '../../../core/utils/study_type_utils.dart';
 import '../../../features/settings/pages/settings_home_page_runtime.dart';
+import '../controllers/life_record_entry_controller.dart';
 import '../controllers/record_entry_controller_runtime.dart';
 
 class AddRecordPage extends StatelessWidget {
   const AddRecordPage({
     super.key,
+    this.recordId,
+    this.embedded = true,
+  });
+
+  final int? recordId;
+  final bool embedded;
+
+  @override
+  Widget build(BuildContext context) {
+    if (recordId != null) {
+      return _StudyRecordFormHost(
+        recordId: recordId,
+        embedded: embedded,
+      );
+    }
+    return _RecordModeBody(embedded: embedded);
+  }
+}
+
+enum _RecordMode { study, life }
+
+class _RecordModeBody extends StatefulWidget {
+  const _RecordModeBody({required this.embedded});
+
+  final bool embedded;
+
+  @override
+  State<_RecordModeBody> createState() => _RecordModeBodyState();
+}
+
+class _RecordModeBodyState extends State<_RecordModeBody> {
+  _RecordMode _mode = _RecordMode.study;
+
+  @override
+  Widget build(BuildContext context) {
+    final body = Column(
+      children: [
+        Padding(
+          padding: const EdgeInsets.fromLTRB(16, 16, 16, 8),
+          child: _RecordModeSwitch(
+            mode: _mode,
+            onChanged: (value) {
+              setState(() {
+                _mode = value;
+              });
+            },
+          ),
+        ),
+        Expanded(
+          child: _mode == _RecordMode.study
+              ? const _StudyRecordFormHost(embedded: false)
+              : const _LifeRecordFormHost(),
+        ),
+      ],
+    );
+    return widget.embedded ? SafeArea(child: body) : body;
+  }
+}
+
+class _StudyRecordFormHost extends StatelessWidget {
+  const _StudyRecordFormHost({
     this.recordId,
     this.embedded = true,
   });
@@ -33,6 +95,25 @@ class AddRecordPage extends StatelessWidget {
         embedded: embedded,
         recordId: recordId,
       ),
+    );
+  }
+}
+
+class _LifeRecordFormHost extends StatelessWidget {
+  const _LifeRecordFormHost();
+
+  @override
+  Widget build(BuildContext context) {
+    return ChangeNotifierProvider<LifeRecordEntryController>(
+      create: (context) {
+        final services = context.read<AppServices>();
+        return LifeRecordEntryController(
+          optionsRepository: services.optionsRepository,
+          studyRecordRepository: services.studyRecordRepository,
+          dataSyncNotifier: services.dataSyncNotifier,
+        );
+      },
+      child: const _LifeRecordFormBody(),
     );
   }
 }
@@ -382,6 +463,322 @@ class _RecordFormBody extends StatelessWidget {
             content: Text(error.toString().replaceFirst('Bad state: ', ''))),
       );
     }
+  }
+}
+
+class _LifeRecordFormBody extends StatelessWidget {
+  const _LifeRecordFormBody();
+
+  @override
+  Widget build(BuildContext context) {
+    return Consumer<LifeRecordEntryController>(
+      builder: (context, controller, child) {
+        if (controller.isLoading) {
+          return const Center(child: CircularProgressIndicator());
+        }
+
+        if (controller.errorMessage != null) {
+          return Padding(
+            padding: const EdgeInsets.all(16),
+            child: Card(
+              child: Padding(
+                padding: const EdgeInsets.all(24),
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    const Icon(Icons.error_outline, size: 40),
+                    const SizedBox(height: 12),
+                    const Text('表单加载失败'),
+                    const SizedBox(height: 8),
+                    Text(controller.errorMessage!, textAlign: TextAlign.center),
+                    const SizedBox(height: 16),
+                    FilledButton.icon(
+                      onPressed: () => controller.load(),
+                      icon: const Icon(Icons.refresh),
+                      label: const Text('重试'),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          );
+        }
+
+        if (!controller.hasEnabledLifeOptions) {
+          return Padding(
+            padding: const EdgeInsets.all(16),
+            child: Column(
+              children: [
+                Card(
+                  child: Padding(
+                    padding: const EdgeInsets.all(24),
+                    child: Column(
+                      children: const [
+                        Icon(Icons.settings_suggest_outlined, size: 40),
+                        SizedBox(height: 12),
+                        Text('当前缺少可用生活记录项'),
+                        SizedBox(height: 8),
+                        Text(
+                          '请先到设置 > 内容管理 > 生活中配置记录项。',
+                          textAlign: TextAlign.center,
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+                const SizedBox(height: 16),
+                FilledButton.icon(
+                  onPressed: () {
+                    Navigator.of(context).push(
+                      MaterialPageRoute<void>(
+                        builder: (_) => const SettingsHomePage(),
+                      ),
+                    );
+                  },
+                  icon: const Icon(Icons.settings_outlined),
+                  label: const Text('打开设置'),
+                ),
+              ],
+            ),
+          );
+        }
+
+        return ListView(
+          padding: const EdgeInsets.all(16),
+          children: [
+            Card(
+              child: Padding(
+                padding: const EdgeInsets.all(16),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      '生活记录项',
+                      style: Theme.of(context).textTheme.titleMedium,
+                    ),
+                    const SizedBox(height: 12),
+                    Wrap(
+                      spacing: 8,
+                      runSpacing: 8,
+                      children: controller.lifeOptions.map((item) {
+                        return ChoiceChip(
+                          label: Text('${item.name}（${item.points}分）'),
+                          selected: controller.selectedOption?.id == item.id &&
+                              controller.selectedOption?.name == item.name,
+                          onSelected: (_) => controller.selectLifeOption(item),
+                        );
+                      }).toList(growable: false),
+                    ),
+                    const SizedBox(height: 12),
+                    Text(
+                      '无需选择分类，按当次完成的生活行为记录即可。',
+                      style: Theme.of(context).textTheme.bodySmall,
+                    ),
+                  ],
+                ),
+              ),
+            ),
+            const SizedBox(height: 16),
+            Card(
+              child: Padding(
+                padding: const EdgeInsets.all(16),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text('备注', style: Theme.of(context).textTheme.titleMedium),
+                    const SizedBox(height: 8),
+                    TextField(
+                      onChanged: controller.setNotes,
+                      decoration: const InputDecoration(
+                        hintText: '可选：记录执行细节，例如锻炼项目、时长等',
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+            const SizedBox(height: 16),
+            Card(
+              child: Padding(
+                padding: const EdgeInsets.all(16),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text('时间', style: Theme.of(context).textTheme.titleMedium),
+                    const SizedBox(height: 8),
+                    Text(
+                      '当前记录时间：${FormatUtils.formatDateTimeMinute(controller.occurredAt)}',
+                    ),
+                    const SizedBox(height: 12),
+                    Row(
+                      children: [
+                        Expanded(
+                          child: OutlinedButton.icon(
+                            onPressed: () => _pickLifeDate(context, controller),
+                            icon: const Icon(Icons.calendar_today_outlined),
+                            label: const Text('修改日期'),
+                          ),
+                        ),
+                        const SizedBox(width: 12),
+                        Expanded(
+                          child: OutlinedButton.icon(
+                            onPressed: () => _pickLifeTime(context, controller),
+                            icon: const Icon(Icons.access_time_outlined),
+                            label: const Text('修改时间'),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ],
+                ),
+              ),
+            ),
+            const SizedBox(height: 16),
+            if (controller.isSaving)
+              const Padding(
+                padding: EdgeInsets.symmetric(vertical: 8),
+                child: LinearProgressIndicator(),
+              ),
+            FilledButton.icon(
+              onPressed: controller.isSaving
+                  ? null
+                  : () => _handleLifeSave(context, controller),
+              icon: const Icon(Icons.save_outlined),
+              label: const Text('保存生活记录'),
+            ),
+          ],
+        );
+      },
+    );
+  }
+
+  Future<void> _pickLifeDate(
+    BuildContext context,
+    LifeRecordEntryController controller,
+  ) async {
+    final date = await showDatePicker(
+      context: context,
+      initialDate: controller.occurredAt,
+      firstDate: DateTime(2020),
+      lastDate: DateTime(2100),
+      locale: const Locale('zh', 'CN'),
+    );
+    if (date == null) {
+      return;
+    }
+    controller.setOccurredAt(
+      DateTime(
+        date.year,
+        date.month,
+        date.day,
+        controller.occurredAt.hour,
+        controller.occurredAt.minute,
+      ),
+    );
+  }
+
+  Future<void> _pickLifeTime(
+    BuildContext context,
+    LifeRecordEntryController controller,
+  ) async {
+    final time = await showTimePicker(
+      context: context,
+      initialTime: TimeOfDay.fromDateTime(controller.occurredAt),
+    );
+    if (time == null) {
+      return;
+    }
+    controller.setOccurredAt(
+      DateTime(
+        controller.occurredAt.year,
+        controller.occurredAt.month,
+        controller.occurredAt.day,
+        time.hour,
+        time.minute,
+      ),
+    );
+  }
+
+  Future<void> _handleLifeSave(
+    BuildContext context,
+    LifeRecordEntryController controller,
+  ) async {
+    try {
+      await controller.save();
+      if (!context.mounted) {
+        return;
+      }
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('生活记录已保存')),
+      );
+    } catch (error) {
+      if (!context.mounted) {
+        return;
+      }
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(error.toString().replaceFirst('Bad state: ', '')),
+        ),
+      );
+    }
+  }
+}
+
+class _RecordModeSwitch extends StatelessWidget {
+  const _RecordModeSwitch({
+    required this.mode,
+    required this.onChanged,
+  });
+
+  final _RecordMode mode;
+  final ValueChanged<_RecordMode> onChanged;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final borderColor = theme.colorScheme.primary.withValues(alpha: 0.45);
+    Widget buildItem(_RecordMode item, String label) {
+      final selected = mode == item;
+      return Expanded(
+        child: InkWell(
+          borderRadius: BorderRadius.circular(12),
+          onTap: () => onChanged(item),
+          child: AnimatedContainer(
+            duration: const Duration(milliseconds: 180),
+            curve: Curves.easeOutCubic,
+            padding: const EdgeInsets.symmetric(vertical: 8),
+            decoration: BoxDecoration(
+              color: selected ? theme.colorScheme.primary : Colors.transparent,
+              borderRadius: BorderRadius.circular(12),
+            ),
+            child: Text(
+              label,
+              textAlign: TextAlign.center,
+              style: theme.textTheme.labelLarge?.copyWith(
+                color: selected
+                    ? theme.colorScheme.onPrimary
+                    : theme.colorScheme.primary,
+                fontWeight: FontWeight.w600,
+              ),
+            ),
+          ),
+        ),
+      );
+    }
+
+    return Container(
+      padding: const EdgeInsets.all(2),
+      decoration: BoxDecoration(
+        borderRadius: BorderRadius.circular(14),
+        border: Border.all(color: borderColor),
+      ),
+      child: Row(
+        children: [
+          buildItem(_RecordMode.study, '学习'),
+          buildItem(_RecordMode.life, '生活'),
+        ],
+      ),
+    );
   }
 }
 

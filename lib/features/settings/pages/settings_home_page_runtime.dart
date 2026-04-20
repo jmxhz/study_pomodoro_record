@@ -10,6 +10,7 @@ import 'manage_categories_page_runtime.dart';
 import 'manage_contents_page_runtime.dart';
 import 'manage_feedback_page_runtime.dart';
 import 'manage_improvement_options_hub_page_runtime.dart';
+import 'manage_life_options_page_runtime.dart';
 import 'manage_redeem_rewards_page_runtime.dart';
 import 'manage_weakness_options_hub_page_runtime.dart';
 
@@ -65,7 +66,7 @@ class _SettingsBody extends StatelessWidget {
                           subtitle: Text(
                             AppTheme.palettes[themeController.paletteKey]
                                     ?.name ??
-                                '莫奈薄雾',
+                                '默认',
                           ),
                           trailing: DropdownButton<String>(
                             value: themeController.paletteKey,
@@ -88,59 +89,39 @@ class _SettingsBody extends StatelessWidget {
                       },
                     ),
                     const Divider(height: 1),
-                    _buildTile(
-                      context,
-                      icon: Icons.category_outlined,
-                      title: '分类管理',
-                      subtitle: '当前 ${controller.categories.length} 项',
-                      page: ChangeNotifierProvider.value(
-                        value: controller,
-                        child: const ManageCategoriesPage(),
-                      ),
-                    ),
-                    const Divider(height: 1),
-                    _buildTile(
-                      context,
-                      icon: Icons.book_outlined,
-                      title: '内容管理',
-                      subtitle: '当前 ${controller.contentOptions.length} 项',
-                      page: ChangeNotifierProvider.value(
-                        value: controller,
-                        child: const ManageContentsPage(),
-                      ),
-                    ),
-                    const Divider(height: 1),
-                    _buildTile(
-                      context,
-                      icon: Icons.self_improvement_outlined,
-                      title: '休息管理',
-                      subtitle:
-                          '短休息 ${controller.shortBreakOptions.length} 项 · 长休息 ${controller.longBreakOptions.length} 项',
-                      page: ChangeNotifierProvider.value(
-                        value: controller,
-                        child: const ManageFeedbackPage(),
-                      ),
-                    ),
-                    const Divider(height: 1),
-                    _buildTile(
-                      context,
-                      icon: Icons.report_problem_outlined,
-                      title: '薄弱点管理',
-                      subtitle: '当前 ${controller.weaknessOptions.length} 项',
-                      page: ChangeNotifierProvider.value(
-                        value: controller,
-                        child: const ManageWeaknessOptionsHubPage(),
-                      ),
-                    ),
-                    const Divider(height: 1),
-                    _buildTile(
-                      context,
-                      icon: Icons.build_circle_outlined,
-                      title: '改进措施管理',
-                      subtitle: '当前 ${controller.improvementOptions.length} 项',
-                      page: ChangeNotifierProvider.value(
-                        value: controller,
-                        child: const ManageImprovementOptionsHubPage(),
+                    Theme(
+                      data: Theme.of(context)
+                          .copyWith(dividerColor: Colors.transparent),
+                      child: ExpansionTile(
+                        initiallyExpanded: false,
+                        leading: const Icon(Icons.folder_open_outlined),
+                        title: const Text('内容管理'),
+                        subtitle: const Text('学习 / 生活'),
+                        childrenPadding:
+                            const EdgeInsets.fromLTRB(12, 0, 12, 8),
+                        children: [
+                          _buildTile(
+                            context,
+                            icon: Icons.school_outlined,
+                            title: '学习',
+                            subtitle:
+                                '分类 ${controller.categories.length} · 内容 ${controller.contentOptions.length}',
+                            page: ChangeNotifierProvider.value(
+                              value: controller,
+                              child: const _StudyContentManagementPage(),
+                            ),
+                          ),
+                          _buildTile(
+                            context,
+                            icon: Icons.self_improvement_outlined,
+                            title: '生活',
+                            subtitle: '记录项 ${controller.lifeOptions.length}',
+                            page: ChangeNotifierProvider.value(
+                              value: controller,
+                              child: const ManageLifeOptionsPage(),
+                            ),
+                          ),
+                        ],
                       ),
                     ),
                     const Divider(height: 1),
@@ -168,8 +149,7 @@ class _SettingsBody extends StatelessWidget {
                           style: Theme.of(context).textTheme.titleMedium),
                       const SizedBox(height: 8),
                       const Text(
-                        '导出已改为单文件备份。首次选择备份文件夹后，之后的新建、修改、兑换、撤销和设置变更会自动备份到该目录。\n'
-                        '导入同时兼容新的单文件备份和旧版 CSV。',
+                        '导出为单文件备份。首次选择备份文件夹后，后续新增和修改会自动备份到该目录。',
                       ),
                       const SizedBox(height: 12),
                       Text(
@@ -301,7 +281,7 @@ class _SettingsBody extends StatelessWidget {
       builder: (context) {
         return AlertDialog(
           title: const Text('选择导入方式'),
-          content: const Text('追加导入会保留现有数据；覆盖导入只会覆盖这次导入中包含的数据类型。'),
+          content: const Text('追加导入会保留现有数据；覆盖导入会覆盖本次导入中包含的数据类型。'),
           actions: [
             TextButton(
               onPressed: () => Navigator.of(context).pop(CsvImportMode.append),
@@ -375,5 +355,91 @@ class _SettingsBody extends StatelessWidget {
         SnackBar(content: Text(error.toString())),
       );
     }
+  }
+}
+
+class _StudyContentManagementPage extends StatelessWidget {
+  const _StudyContentManagementPage();
+
+  @override
+  Widget build(BuildContext context) {
+    return Consumer<SettingsController>(
+      builder: (context, controller, child) {
+        Widget navTile({
+          required IconData icon,
+          required String title,
+          required String subtitle,
+          required Widget page,
+        }) {
+          return ListTile(
+            leading: Icon(icon),
+            title: Text(title),
+            subtitle: Text(subtitle),
+            trailing: const Icon(Icons.chevron_right),
+            onTap: () => Navigator.of(context).push(
+              MaterialPageRoute<void>(builder: (_) => page),
+            ),
+          );
+        }
+
+        return Scaffold(
+          appBar: AppBar(title: const Text('学习内容管理')),
+          body: ListView(
+            children: [
+              navTile(
+                icon: Icons.category_outlined,
+                title: '分类管理',
+                subtitle: '当前 ${controller.categories.length} 项',
+                page: ChangeNotifierProvider.value(
+                  value: controller,
+                  child: const ManageCategoriesPage(),
+                ),
+              ),
+              const Divider(height: 1),
+              navTile(
+                icon: Icons.book_outlined,
+                title: '内容管理',
+                subtitle: '当前 ${controller.contentOptions.length} 项',
+                page: ChangeNotifierProvider.value(
+                  value: controller,
+                  child: const ManageContentsPage(),
+                ),
+              ),
+              const Divider(height: 1),
+              navTile(
+                icon: Icons.hotel_outlined,
+                title: '休息管理',
+                subtitle:
+                    '短休息 ${controller.shortBreakOptions.length} 项 · 长休息 ${controller.longBreakOptions.length} 项',
+                page: ChangeNotifierProvider.value(
+                  value: controller,
+                  child: const ManageFeedbackPage(),
+                ),
+              ),
+              const Divider(height: 1),
+              navTile(
+                icon: Icons.report_problem_outlined,
+                title: '薄弱点管理',
+                subtitle: '当前 ${controller.weaknessOptions.length} 项',
+                page: ChangeNotifierProvider.value(
+                  value: controller,
+                  child: const ManageWeaknessOptionsHubPage(),
+                ),
+              ),
+              const Divider(height: 1),
+              navTile(
+                icon: Icons.build_circle_outlined,
+                title: '改进措施管理',
+                subtitle: '当前 ${controller.improvementOptions.length} 项',
+                page: ChangeNotifierProvider.value(
+                  value: controller,
+                  child: const ManageImprovementOptionsHubPage(),
+                ),
+              ),
+            ],
+          ),
+        );
+      },
+    );
   }
 }

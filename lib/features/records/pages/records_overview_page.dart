@@ -5,12 +5,14 @@ import 'package:provider/provider.dart';
 
 import '../../../app/app_services.dart';
 import '../../../core/utils/format_utils.dart';
+import '../../../core/utils/study_date_utils.dart';
 import '../../../core/utils/study_type_utils.dart';
 import '../../../data/models/statistics_models.dart';
 import '../../../data/models/study_record.dart';
 import '../../../shared/widgets/comparison_widgets.dart';
 import '../../../shared/widgets/state_views.dart';
 import '../../add_record/pages/record_entry_page_runtime.dart';
+import '../controllers/life_records_controller.dart';
 import '../controllers/records_overview_controller.dart';
 import 'record_tag_stats_page.dart';
 
@@ -19,17 +21,70 @@ class RecordsPage extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return ChangeNotifierProvider<RecordsOverviewController>(
-      create: (context) {
-        final services = context.read<AppServices>();
-        return RecordsOverviewController(
-          optionsRepository: services.optionsRepository,
-          studyRecordRepository: services.studyRecordRepository,
-          rewardRedemptionRepository: services.rewardRedemptionRepository,
-          dataSyncNotifier: services.dataSyncNotifier,
-        );
-      },
-      child: const _RecordsBody(),
+    return MultiProvider(
+      providers: [
+        ChangeNotifierProvider<RecordsOverviewController>(
+          create: (context) {
+            final services = context.read<AppServices>();
+            return RecordsOverviewController(
+              optionsRepository: services.optionsRepository,
+              studyRecordRepository: services.studyRecordRepository,
+              rewardRedemptionRepository: services.rewardRedemptionRepository,
+              dataSyncNotifier: services.dataSyncNotifier,
+            );
+          },
+        ),
+        ChangeNotifierProvider<LifeRecordsController>(
+          create: (context) {
+            final services = context.read<AppServices>();
+            return LifeRecordsController(
+              studyRecordRepository: services.studyRecordRepository,
+              dataSyncNotifier: services.dataSyncNotifier,
+            );
+          },
+        ),
+      ],
+      child: const _RecordsModeBody(),
+    );
+  }
+}
+
+enum _RecordStatsMode { study, life }
+
+class _RecordsModeBody extends StatefulWidget {
+  const _RecordsModeBody();
+
+  @override
+  State<_RecordsModeBody> createState() => _RecordsModeBodyState();
+}
+
+class _RecordsModeBodyState extends State<_RecordsModeBody> {
+  _RecordStatsMode _mode = _RecordStatsMode.study;
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      children: [
+        SafeArea(
+          bottom: false,
+          child: Padding(
+            padding: const EdgeInsets.fromLTRB(16, 16, 16, 8),
+            child: _RecordStatsModeSwitch(
+              mode: _mode,
+              onChanged: (value) {
+                setState(() {
+                  _mode = value;
+                });
+              },
+            ),
+          ),
+        ),
+        Expanded(
+          child: _mode == _RecordStatsMode.study
+              ? const _RecordsBody()
+              : const _LifeRecordsBody(),
+        ),
+      ],
     );
   }
 }
@@ -239,6 +294,308 @@ class _RecordsBodyState extends State<_RecordsBody> {
         const SnackBar(content: Text('\u8bb0\u5f55\u5df2\u5220\u9664')),
       );
     }
+  }
+}
+
+class _LifeRecordsBody extends StatelessWidget {
+  const _LifeRecordsBody();
+
+  @override
+  Widget build(BuildContext context) {
+    return Consumer<LifeRecordsController>(
+      builder: (context, controller, child) {
+        if (controller.isLoading && controller.details.isEmpty) {
+          return const LoadingView(message: '正在汇总生活记录...');
+        }
+        if (controller.errorMessage != null && controller.details.isEmpty) {
+          return Padding(
+            padding: const EdgeInsets.all(16),
+            child: ErrorStateCard(
+              message: controller.errorMessage!,
+              onRetry: () => controller.load(),
+            ),
+          );
+        }
+
+        final period = StudyDateUtils.buildPeriodRange(
+            controller.granularity, controller.anchorDate);
+        return ListView(
+          padding: const EdgeInsets.all(16),
+          children: [
+            Card(
+              child: Padding(
+                padding: const EdgeInsets.all(16),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text('统计范围',
+                        style: Theme.of(context).textTheme.titleMedium),
+                    const SizedBox(height: 12),
+                    _GranularitySelector(
+                      value: controller.granularity,
+                      onChanged: controller.setGranularity,
+                    ),
+                    const SizedBox(height: 16),
+                    Row(
+                      children: [
+                        IconButton(
+                          onPressed: controller.isLoading
+                              ? null
+                              : () => controller.shiftPeriod(-1),
+                          icon: const Icon(Icons.chevron_left),
+                        ),
+                        Expanded(
+                          child: OutlinedButton.icon(
+                            onPressed: controller.isLoading
+                                ? null
+                                : () => _pickLifePeriod(context, controller),
+                            icon: const Icon(Icons.event_outlined),
+                            label: Text(period.label),
+                          ),
+                        ),
+                        IconButton(
+                          onPressed: controller.isLoading
+                              ? null
+                              : () => controller.shiftPeriod(1),
+                          icon: const Icon(Icons.chevron_right),
+                        ),
+                      ],
+                    ),
+                    if (controller.isLoading) ...[
+                      const SizedBox(height: 12),
+                      const LinearProgressIndicator(),
+                    ],
+                  ],
+                ),
+              ),
+            ),
+            const SizedBox(height: 16),
+            Card(
+              child: Padding(
+                padding: const EdgeInsets.all(16),
+                child: Row(
+                  children: [
+                    Expanded(
+                      child: _LifeMetricItem(
+                        title: '生活记录数',
+                        value: '${controller.totalCount}',
+                        unit: '次',
+                      ),
+                    ),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: _LifeMetricItem(
+                        title: '生活积分',
+                        value: '${controller.totalPoints}',
+                        unit: '分',
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+            const SizedBox(height: 16),
+            Text('习惯统计', style: Theme.of(context).textTheme.titleLarge),
+            const SizedBox(height: 8),
+            if (controller.habitSummaries.isEmpty)
+              const EmptyStateCard(
+                title: '当前周期暂无生活记录',
+                subtitle: '请先在“新增记录”切换到生活模式后添加记录。',
+                icon: Icons.self_improvement_outlined,
+              )
+            else
+              ...controller.habitSummaries.map(
+                (item) => Card(
+                  child: ListTile(
+                    title: Text(item.name),
+                    subtitle: Text('${item.count} 次，${item.points} 分'),
+                  ),
+                ),
+              ),
+            const SizedBox(height: 16),
+            Text('详细记录', style: Theme.of(context).textTheme.titleLarge),
+            const SizedBox(height: 8),
+            if (controller.details.isEmpty)
+              const EmptyStateCard(
+                title: '暂无详细记录',
+                subtitle: '记录后会在这里展示生活数据。',
+                icon: Icons.list_alt_outlined,
+              )
+            else
+              ...controller.details.map(
+                (record) => Card(
+                  child: ListTile(
+                    title: Text(record.contentNameSnapshot),
+                    subtitle: Text(
+                      '${FormatUtils.formatDateTime(record.occurredAt)} · ${record.points} 分'
+                      '${record.notes?.trim().isNotEmpty == true ? '\n备注：${record.notes}' : ''}',
+                    ),
+                    isThreeLine: record.notes?.trim().isNotEmpty == true,
+                    trailing: IconButton(
+                      tooltip: '删除',
+                      icon: const Icon(Icons.delete_outline),
+                      onPressed: () =>
+                          _confirmDeleteLife(context, controller, record),
+                    ),
+                  ),
+                ),
+              ),
+            if (controller.errorMessage != null &&
+                controller.details.isNotEmpty) ...[
+              const SizedBox(height: 16),
+              Text(
+                controller.errorMessage!,
+                style: TextStyle(color: Theme.of(context).colorScheme.error),
+              ),
+            ],
+          ],
+        );
+      },
+    );
+  }
+
+  Future<void> _pickLifePeriod(
+    BuildContext context,
+    LifeRecordsController controller,
+  ) async {
+    final result = await showDatePicker(
+      context: context,
+      initialDate: controller.anchorDate,
+      firstDate: DateTime(2020),
+      lastDate: DateTime(2100),
+      locale: const Locale('zh', 'CN'),
+      initialDatePickerMode: controller.granularity == TimeGranularity.year
+          ? DatePickerMode.year
+          : DatePickerMode.day,
+    );
+    if (result == null) {
+      return;
+    }
+    await controller.setAnchorDate(result);
+  }
+
+  Future<void> _confirmDeleteLife(
+    BuildContext context,
+    LifeRecordsController controller,
+    StudyRecord record,
+  ) async {
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (context) {
+        return AlertDialog(
+          title: const Text('删除生活记录'),
+          content: Text(
+            '确认删除 ${FormatUtils.formatDateTime(record.occurredAt)} 这条记录吗？',
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.of(context).pop(false),
+              child: const Text('取消'),
+            ),
+            FilledButton(
+              onPressed: () => Navigator.of(context).pop(true),
+              child: const Text('删除'),
+            ),
+          ],
+        );
+      },
+    );
+    if (confirmed == true) {
+      await controller.deleteRecord(record);
+      if (!context.mounted) {
+        return;
+      }
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('生活记录已删除')),
+      );
+    }
+  }
+}
+
+class _LifeMetricItem extends StatelessWidget {
+  const _LifeMetricItem({
+    required this.title,
+    required this.value,
+    required this.unit,
+  });
+
+  final String title;
+  final String value;
+  final String unit;
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(title, style: Theme.of(context).textTheme.labelLarge),
+        const SizedBox(height: 8),
+        Text(
+          '$value $unit',
+          style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                fontWeight: FontWeight.w700,
+              ),
+        ),
+      ],
+    );
+  }
+}
+
+class _RecordStatsModeSwitch extends StatelessWidget {
+  const _RecordStatsModeSwitch({
+    required this.mode,
+    required this.onChanged,
+  });
+
+  final _RecordStatsMode mode;
+  final ValueChanged<_RecordStatsMode> onChanged;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final borderColor = theme.colorScheme.primary.withValues(alpha: 0.45);
+    Widget buildItem(_RecordStatsMode item, String label) {
+      final selected = mode == item;
+      return Expanded(
+        child: InkWell(
+          borderRadius: BorderRadius.circular(12),
+          onTap: () => onChanged(item),
+          child: AnimatedContainer(
+            duration: const Duration(milliseconds: 180),
+            curve: Curves.easeOutCubic,
+            padding: const EdgeInsets.symmetric(vertical: 8),
+            decoration: BoxDecoration(
+              color: selected ? theme.colorScheme.primary : Colors.transparent,
+              borderRadius: BorderRadius.circular(12),
+            ),
+            child: Text(
+              label,
+              textAlign: TextAlign.center,
+              style: theme.textTheme.labelLarge?.copyWith(
+                color: selected
+                    ? theme.colorScheme.onPrimary
+                    : theme.colorScheme.primary,
+                fontWeight: FontWeight.w600,
+              ),
+            ),
+          ),
+        ),
+      );
+    }
+
+    return Container(
+      padding: const EdgeInsets.all(2),
+      decoration: BoxDecoration(
+        borderRadius: BorderRadius.circular(14),
+        border: Border.all(color: borderColor),
+      ),
+      child: Row(
+        children: [
+          buildItem(_RecordStatsMode.study, '学习'),
+          buildItem(_RecordStatsMode.life, '生活'),
+        ],
+      ),
+    );
   }
 }
 

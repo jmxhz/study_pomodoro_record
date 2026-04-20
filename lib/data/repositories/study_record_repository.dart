@@ -54,23 +54,35 @@ class StudyRecordRepository {
   Future<int> totalEarnedPoints() async {
     final db = await _database.database;
     return Sqflite.firstIntValue(
-          await db.rawQuery('SELECT COALESCE(SUM(points), 0) FROM study_records'),
+          await db.rawQuery(
+            "SELECT COALESCE(SUM(points), 0) FROM study_records WHERE record_kind = 'study'",
+          ),
         ) ??
         0;
   }
 
   Future<List<StudyRecord>> getRecordsBetween(
-    DateTime start,
-    DateTime endExclusive,
-  ) async {
+      DateTime start, DateTime endExclusive,
+      {String recordKind = 'study'}) async {
     final db = await _database.database;
     final maps = await db.query(
       'study_records',
-      where: 'occurred_at >= ? AND occurred_at < ?',
-      whereArgs: [start.toIso8601String(), endExclusive.toIso8601String()],
+      where: 'occurred_at >= ? AND occurred_at < ? AND record_kind = ?',
+      whereArgs: [
+        start.toIso8601String(),
+        endExclusive.toIso8601String(),
+        recordKind,
+      ],
       orderBy: 'occurred_at DESC, id DESC',
     );
     return maps.map(StudyRecord.fromMap).toList(growable: false);
+  }
+
+  Future<List<StudyRecord>> getLifeRecordsBetween(
+    DateTime start,
+    DateTime endExclusive,
+  ) {
+    return getRecordsBetween(start, endExclusive, recordKind: 'life');
   }
 
   Future<Map<int, int>> getContentUsageCounts() async {
@@ -79,6 +91,7 @@ class StudyRecordRepository {
       SELECT content_option_id, COUNT(*) AS usage_count
       FROM study_records
       WHERE content_option_id IS NOT NULL
+        AND record_kind = 'study'
       GROUP BY content_option_id
     ''');
 
@@ -98,6 +111,7 @@ class StudyRecordRepository {
     final whereParts = <String>[
       'occurred_at >= ?',
       'occurred_at < ?',
+      "record_kind = 'study'",
     ];
     final whereArgs = <Object?>[
       start.toIso8601String(),
@@ -125,6 +139,7 @@ class StudyRecordRepository {
   }) async {
     final db = await _database.database;
     final whereParts = <String>['occurred_at <= ?'];
+    whereParts.add("record_kind = 'study'");
     final whereArgs = <Object?>[anchor.toIso8601String()];
     if (excludingRecordId != null) {
       whereParts.add('id != ?');
@@ -180,6 +195,7 @@ class StudyRecordRepository {
       'occurred_at >= ?',
       'occurred_at < ?',
       'points < ?',
+      "record_kind = 'study'",
     ];
     final whereArgs = <Object?>[
       start.toIso8601String(),
@@ -214,6 +230,7 @@ class StudyRecordRepository {
       'occurred_at < ?',
       'points < ?',
       'category_id IS NOT NULL',
+      "record_kind = 'study'",
     ];
     final whereArgs = <Object?>[
       start.toIso8601String(),
@@ -251,6 +268,7 @@ class StudyRecordRepository {
     final whereParts = <String>[
       'occurred_at >= ?',
       'occurred_at < ?',
+      "record_kind = 'study'",
     ];
     final whereArgs = <Object?>[
       start.toIso8601String(),

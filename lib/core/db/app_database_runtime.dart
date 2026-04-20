@@ -3,7 +3,7 @@ import 'package:sqflite/sqflite.dart';
 
 class AppDatabase {
   static const _databaseName = 'study_pomodoro_record.db';
-  static const _databaseVersion = 6;
+  static const _databaseVersion = 7;
 
   Database? _database;
 
@@ -38,6 +38,9 @@ class AppDatabase {
         }
         if (oldVersion < 6) {
           await _migrateToV6(db);
+        }
+        if (oldVersion < 7) {
+          await _migrateToV7(db);
         }
       },
       onOpen: (db) async {
@@ -91,10 +94,13 @@ class AppDatabase {
     await _createWeaknessOptionsTable(db);
     await _createImprovementOptionsTable(db);
     await _createRedeemRewardsTable(db);
+    await _createLifeOptionsTable(db);
 
     await db.execute('''
       CREATE TABLE study_records (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
+        record_kind TEXT NOT NULL DEFAULT 'study',
+        life_option_id INTEGER,
         occurred_at TEXT NOT NULL,
         category_id INTEGER,
         category_name_snapshot TEXT NOT NULL,
@@ -178,6 +184,20 @@ class AppDatabase {
         redeemed_at TEXT NOT NULL,
         note TEXT,
         created_at TEXT NOT NULL
+      )
+    ''');
+  }
+
+  Future<void> _createLifeOptionsTable(DatabaseExecutor db) async {
+    await db.execute('''
+      CREATE TABLE IF NOT EXISTS life_options (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        name TEXT NOT NULL,
+        points INTEGER NOT NULL,
+        sort_order INTEGER NOT NULL,
+        is_enabled INTEGER NOT NULL DEFAULT 1,
+        created_at TEXT NOT NULL,
+        updated_at TEXT NOT NULL
       )
     ''');
   }
@@ -339,6 +359,28 @@ class AppDatabase {
     await _syncContentStudyTypes(db);
   }
 
+  Future<void> _migrateToV7(Database db) async {
+    await _addColumnIfMissing(
+      db,
+      table: 'study_records',
+      columnName: 'record_kind',
+      definition: "TEXT NOT NULL DEFAULT 'study'",
+    );
+    await _addColumnIfMissing(
+      db,
+      table: 'study_records',
+      columnName: 'life_option_id',
+      definition: 'INTEGER',
+    );
+    await _createLifeOptionsTable(db);
+    await db.execute('''
+      UPDATE study_records
+      SET record_kind = 'study'
+      WHERE record_kind IS NULL OR TRIM(record_kind) = ''
+    ''');
+    await _seedLifeOptionsIfNeeded(db);
+  }
+
   Future<void> _seedFreshDefaultsIfNeeded(Database db) async {
     final categoryCount = await _count(db, 'categories');
     final contentCount = await _count(db, 'content_options');
@@ -431,6 +473,7 @@ class AppDatabase {
     await _seedLongBreakSettingIfNeeded(db);
     await _seedSessionGapSettingIfNeeded(db);
     await _seedThemePaletteIfNeeded(db);
+    await _seedLifeOptionsIfNeeded(db);
     await _syncContentStudyTypes(db);
   }
 
@@ -453,7 +496,39 @@ class AppDatabase {
 
     await _seedLongBreakSettingIfNeeded(db);
     await _seedSessionGapSettingIfNeeded(db);
+    await _seedLifeOptionsIfNeeded(db);
     await _syncContentStudyTypes(db);
+  }
+
+  Future<void> _seedLifeOptionsIfNeeded(Database db) async {
+    if (await _count(db, 'life_options') > 0) {
+      return;
+    }
+    final now = DateTime.now().toIso8601String();
+    const defaults = [
+      ('起床后立刻离床', 3),
+      ('早晨未在床上刷视频', 3),
+      ('回家后立刻洗漱', 3),
+      ('晚上未刷视频/未玩游戏', 4),
+      ('22点前上床', 5),
+      ('23点前睡觉', 5),
+      ('22:30打卡后未继续玩手机', 5),
+      ('肩颈放松', 4),
+      ('轻度锻炼', 4),
+    ];
+    await db.transaction((txn) async {
+      for (var index = 0; index < defaults.length; index++) {
+        final item = defaults[index];
+        await txn.insert('life_options', {
+          'name': item.$1,
+          'points': item.$2,
+          'sort_order': index,
+          'is_enabled': 1,
+          'created_at': now,
+          'updated_at': now,
+        });
+      }
+    });
   }
 
   Future<void> _seedContentBoundOptions({

@@ -1,4 +1,4 @@
-﻿import 'dart:async';
+import 'dart:async';
 
 import 'package:flutter/foundation.dart';
 
@@ -68,18 +68,22 @@ class RecordsOverviewController extends ChangeNotifier {
         studyRecordRepository.getRecordsBetween(
           currentPeriod.start,
           currentPeriod.endExclusive,
+          recordKind: 'study',
         ),
         studyRecordRepository.getRecordsBetween(
           previousPeriod.start,
           previousPeriod.endExclusive,
+          recordKind: 'study',
         ),
         studyRecordRepository.getRecordsBetween(
           yoyPeriod.start,
           yoyPeriod.endExclusive,
+          recordKind: 'study',
         ),
         studyRecordRepository.getRecordsBetween(
           breakdownCoverage.start,
           breakdownCoverage.endExclusive,
+          recordKind: 'study',
         ),
         optionsRepository.getCategories(),
       ]);

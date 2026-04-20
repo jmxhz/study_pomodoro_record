@@ -4,6 +4,7 @@ import '../../core/db/app_database_runtime.dart';
 import '../models/category_option.dart';
 import '../models/content_option.dart';
 import '../models/improvement_option.dart';
+import '../models/life_option.dart';
 import '../models/redeem_reward.dart';
 import '../models/reward_option.dart';
 import '../models/weakness_option.dart';
@@ -273,6 +274,18 @@ class OptionsRepository {
     return maps.map(RedeemReward.fromMap).toList(growable: false);
   }
 
+  Future<List<LifeOption>> getLifeOptions({
+    bool includeDisabled = true,
+  }) async {
+    final db = await _database.database;
+    final maps = await db.query(
+      'life_options',
+      where: includeDisabled ? null : 'is_enabled = 1',
+      orderBy: 'sort_order ASC, id ASC',
+    );
+    return maps.map(LifeOption.fromMap).toList(growable: false);
+  }
+
   Future<int> insertCategory(CategoryOption category) async {
     final db = await _database.database;
     return db.insert('categories', category.toMap());
@@ -375,6 +388,11 @@ class OptionsRepository {
     return db.insert('redeem_rewards', item.toMap());
   }
 
+  Future<int> insertLifeOption(LifeOption item) async {
+    final db = await _database.database;
+    return db.insert('life_options', item.toMap());
+  }
+
   Future<void> updateRewardOption(RewardOption rewardOption) async {
     final db = await _database.database;
     await db.update(
@@ -415,6 +433,16 @@ class OptionsRepository {
     );
   }
 
+  Future<void> updateLifeOption(LifeOption item) async {
+    final db = await _database.database;
+    await db.update(
+      'life_options',
+      item.toMap(),
+      where: 'id = ?',
+      whereArgs: [item.id],
+    );
+  }
+
   Future<void> deleteRewardOption(int id) async {
     final db = await _database.database;
     await db.delete('reward_options', where: 'id = ?', whereArgs: [id]);
@@ -435,6 +463,11 @@ class OptionsRepository {
     await db.delete('redeem_rewards', where: 'id = ?', whereArgs: [id]);
   }
 
+  Future<void> deleteLifeOption(int id) async {
+    final db = await _database.database;
+    await db.delete('life_options', where: 'id = ?', whereArgs: [id]);
+  }
+
   Future<void> reorderRewardOptions(List<RewardOption> options) async {
     final db = await _database.database;
     await db.transaction((txn) async {
@@ -453,15 +486,23 @@ class OptionsRepository {
   }
 
   Future<void> reorderWeaknessOptions(List<WeaknessOption> items) async {
-    await _reorderSimpleTable('weakness_options', items.map((item) => item.id).toList());
+    await _reorderSimpleTable(
+        'weakness_options', items.map((item) => item.id).toList());
   }
 
   Future<void> reorderImprovementOptions(List<ImprovementOption> items) async {
-    await _reorderSimpleTable('improvement_options', items.map((item) => item.id).toList());
+    await _reorderSimpleTable(
+        'improvement_options', items.map((item) => item.id).toList());
   }
 
   Future<void> reorderRedeemRewards(List<RedeemReward> items) async {
-    await _reorderSimpleTable('redeem_rewards', items.map((item) => item.id).toList());
+    await _reorderSimpleTable(
+        'redeem_rewards', items.map((item) => item.id).toList());
+  }
+
+  Future<void> reorderLifeOptions(List<LifeOption> items) async {
+    await _reorderSimpleTable(
+        'life_options', items.map((item) => item.id).toList());
   }
 
   Future<int> nextCategorySortOrder() => _nextSortOrder('categories');
@@ -472,14 +513,16 @@ class OptionsRepository {
 
   Future<int> nextWeaknessSortOrder() => _nextSortOrder('weakness_options');
 
-  Future<int> nextImprovementSortOrder() => _nextSortOrder('improvement_options');
+  Future<int> nextImprovementSortOrder() =>
+      _nextSortOrder('improvement_options');
 
   Future<int> nextRedeemRewardSortOrder() => _nextSortOrder('redeem_rewards');
 
+  Future<int> nextLifeOptionSortOrder() => _nextSortOrder('life_options');
+
   Future<int> _nextSortOrder(String table) async {
     final db = await _database.database;
-    final result =
-        Sqflite.firstIntValue(
+    final result = Sqflite.firstIntValue(
           await db.rawQuery('SELECT MAX(sort_order) FROM $table'),
         ) ??
         -1;
@@ -574,6 +617,21 @@ class OptionsRepository {
     final db = await _database.database;
     await db.transaction((txn) async {
       await _insertRedeemRewards(txn, items);
+    });
+  }
+
+  Future<void> replaceLifeOptions(List<LifeOption> items) async {
+    final db = await _database.database;
+    await db.transaction((txn) async {
+      await txn.delete('life_options');
+      await _insertLifeOptions(txn, items);
+    });
+  }
+
+  Future<void> appendLifeOptions(List<LifeOption> items) async {
+    final db = await _database.database;
+    await db.transaction((txn) async {
+      await _insertLifeOptions(txn, items);
     });
   }
 
@@ -703,6 +761,21 @@ class OptionsRepository {
     for (final item in items) {
       batch.insert(
         'redeem_rewards',
+        item.toMap(includeId: true),
+        conflictAlgorithm: ConflictAlgorithm.replace,
+      );
+    }
+    await batch.commit(noResult: true);
+  }
+
+  Future<void> _insertLifeOptions(
+    DatabaseExecutor executor,
+    List<LifeOption> items,
+  ) async {
+    final batch = executor.batch();
+    for (final item in items) {
+      batch.insert(
+        'life_options',
         item.toMap(includeId: true),
         conflictAlgorithm: ConflictAlgorithm.replace,
       );

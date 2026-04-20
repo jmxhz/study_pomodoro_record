@@ -403,6 +403,8 @@ class CsvService {
 
   static const List<String> studyRecordsHeaders = [
     'id',
+    'record_kind',
+    'life_option_id',
     'occurred_at',
     'category_id',
     'category_name_snapshot',
@@ -427,6 +429,30 @@ class CsvService {
   ];
 
   static const List<String> legacyStudyRecordsHeaders = [
+    'id',
+    'occurred_at',
+    'category_id',
+    'category_name_snapshot',
+    'content_option_id',
+    'content_name_snapshot',
+    'reward_option_id',
+    'reward_name_snapshot',
+    'feedback_option_id',
+    'feedback_name_snapshot',
+    'pomodoro_count',
+    'points',
+    'detail_amount_text',
+    'question_count',
+    'wrong_count',
+    'output_type',
+    'weakness_tags',
+    'improvement_tags',
+    'notes',
+    'created_at',
+    'updated_at',
+  ];
+
+  static const List<String> legacyStudyRecordsHeadersV1 = [
     'id',
     'occurred_at',
     'category_id',
@@ -650,6 +676,8 @@ class CsvService {
             .map(
               (item) => [
                 item.id,
+                item.recordKind,
+                item.lifeOptionId ?? '',
                 item.occurredAt.toIso8601String(),
                 item.categoryId ?? '',
                 item.categoryNameSnapshot,
@@ -1112,69 +1140,77 @@ class CsvService {
     final decoded = _decodeCsvWithHeaders(content, [
       studyRecordsHeaders,
       legacyStudyRecordsHeaders,
+      legacyStudyRecordsHeadersV1,
     ]);
     final rows = decoded.rows;
-    return rows
-        .map(
-          (row) => StudyRecord(
-            id: _parseNullableInt(row[0]),
-            occurredAt: _parseDateTime(row[1], 'occurred_at'),
-            categoryId: _parseNullableInt(row[2]),
-            categoryNameSnapshot:
-                _requireText(row[3], 'category_name_snapshot'),
-            contentOptionId: _parseNullableInt(row[4]),
-            contentNameSnapshot: _requireText(row[5], 'content_name_snapshot'),
-            rewardOptionId: _parseNullableInt(row[6]),
-            rewardNameSnapshot: _requireText(row[7], 'reward_name_snapshot'),
-            breakType: decoded.headers == studyRecordsHeaders
-                ? _parseNullableText(row[8])
-                : null,
-            feedbackOptionId: _parseNullableInt(
-              row[decoded.headers == studyRecordsHeaders ? 9 : 8],
-            ),
-            feedbackNameSnapshot: _parseNullableText(
-              row[decoded.headers == studyRecordsHeaders ? 10 : 9],
-            ),
-            pomodoroCount: _parseRequiredInt(
-              row[decoded.headers == studyRecordsHeaders ? 11 : 10],
-              'pomodoro_count',
-            ),
-            points: _parseRequiredInt(
-              row[decoded.headers == studyRecordsHeaders ? 12 : 11],
-              'points',
-            ),
-            detailAmountText: _parseNullableText(
-              row[decoded.headers == studyRecordsHeaders ? 13 : 12],
-            ),
-            questionCount: _parseNullableInt(
-              row[decoded.headers == studyRecordsHeaders ? 14 : 13],
-            ),
-            wrongCount: _parseNullableInt(
-              row[decoded.headers == studyRecordsHeaders ? 15 : 14],
-            ),
-            outputType: _parseNullableText(
-              row[decoded.headers == studyRecordsHeaders ? 16 : 15],
-            ),
-            weaknessTags: _parseTagList(
-              row[decoded.headers == studyRecordsHeaders ? 17 : 16],
-            ),
-            improvementTags: _parseTagList(
-              row[decoded.headers == studyRecordsHeaders ? 18 : 17],
-            ),
-            notes: _parseNullableText(
-              row[decoded.headers == studyRecordsHeaders ? 19 : 18],
-            ),
-            createdAt: _parseDateTime(
-              row[decoded.headers == studyRecordsHeaders ? 20 : 19],
-              'created_at',
-            ),
-            updatedAt: _parseDateTime(
-              row[decoded.headers == studyRecordsHeaders ? 21 : 20],
-              'updated_at',
-            ),
+    return rows.map(
+      (row) {
+        final hasKind = decoded.headers == studyRecordsHeaders;
+        final hasBreakType = decoded.headers != legacyStudyRecordsHeadersV1;
+        final offset = hasKind ? 2 : 0;
+        final breakOffset = hasKind ? 10 : (hasBreakType ? 8 : -1);
+        return StudyRecord(
+          id: _parseNullableInt(row[0]),
+          recordKind:
+              hasKind ? (_parseNullableText(row[1]) ?? 'study') : 'study',
+          lifeOptionId: hasKind ? _parseNullableInt(row[2]) : null,
+          occurredAt: _parseDateTime(row[1 + offset], 'occurred_at'),
+          categoryId: _parseNullableInt(row[2 + offset]),
+          categoryNameSnapshot:
+              _requireText(row[3 + offset], 'category_name_snapshot'),
+          contentOptionId: _parseNullableInt(row[4 + offset]),
+          contentNameSnapshot:
+              _requireText(row[5 + offset], 'content_name_snapshot'),
+          rewardOptionId: _parseNullableInt(row[6 + offset]),
+          rewardNameSnapshot:
+              _requireText(row[7 + offset], 'reward_name_snapshot'),
+          breakType: hasBreakType ? _parseNullableText(row[breakOffset]) : null,
+          feedbackOptionId: _parseNullableInt(
+            row[hasBreakType ? breakOffset + 1 : 8 + offset],
           ),
-        )
-        .toList(growable: false);
+          feedbackNameSnapshot: _parseNullableText(
+            row[hasBreakType ? breakOffset + 2 : 9 + offset],
+          ),
+          pomodoroCount: _parseRequiredInt(
+            row[hasBreakType ? breakOffset + 3 : 10 + offset],
+            'pomodoro_count',
+          ),
+          points: _parseRequiredInt(
+            row[hasBreakType ? breakOffset + 4 : 11 + offset],
+            'points',
+          ),
+          detailAmountText: _parseNullableText(
+            row[hasBreakType ? breakOffset + 5 : 12 + offset],
+          ),
+          questionCount: _parseNullableInt(
+            row[hasBreakType ? breakOffset + 6 : 13 + offset],
+          ),
+          wrongCount: _parseNullableInt(
+            row[hasBreakType ? breakOffset + 7 : 14 + offset],
+          ),
+          outputType: _parseNullableText(
+            row[hasBreakType ? breakOffset + 8 : 15 + offset],
+          ),
+          weaknessTags: _parseTagList(
+            row[hasBreakType ? breakOffset + 9 : 16 + offset],
+          ),
+          improvementTags: _parseTagList(
+            row[hasBreakType ? breakOffset + 10 : 17 + offset],
+          ),
+          notes: _parseNullableText(
+            row[hasBreakType ? breakOffset + 11 : 18 + offset],
+          ),
+          createdAt: _parseDateTime(
+            row[hasBreakType ? breakOffset + 12 : 19 + offset],
+            'created_at',
+          ),
+          updatedAt: _parseDateTime(
+            row[hasBreakType ? breakOffset + 13 : 20 + offset],
+            'updated_at',
+          ),
+        );
+      },
+    ).toList(growable: false);
   }
 
   List<RewardRedemptionRecord> _parseRewardRedemptionRecords(String content) {

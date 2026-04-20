@@ -3,6 +3,8 @@ import 'dart:convert';
 class StudyRecord {
   StudyRecord({
     this.id,
+    this.recordKind = 'study',
+    this.lifeOptionId,
     required this.occurredAt,
     required this.categoryId,
     required this.categoryNameSnapshot,
@@ -27,6 +29,8 @@ class StudyRecord {
   });
 
   final int? id;
+  final String recordKind;
+  final int? lifeOptionId;
   final DateTime occurredAt;
   final int? categoryId;
   final String categoryNameSnapshot;
@@ -51,6 +55,9 @@ class StudyRecord {
 
   StudyRecord copyWith({
     int? id,
+    String? recordKind,
+    int? lifeOptionId,
+    bool clearLifeOptionId = false,
     DateTime? occurredAt,
     int? categoryId,
     bool clearCategoryId = false,
@@ -84,6 +91,9 @@ class StudyRecord {
   }) {
     return StudyRecord(
       id: id ?? this.id,
+      recordKind: recordKind ?? this.recordKind,
+      lifeOptionId:
+          clearLifeOptionId ? null : lifeOptionId ?? this.lifeOptionId,
       occurredAt: occurredAt ?? this.occurredAt,
       categoryId: clearCategoryId ? null : categoryId ?? this.categoryId,
       categoryNameSnapshot: categoryNameSnapshot ?? this.categoryNameSnapshot,
@@ -94,13 +104,17 @@ class StudyRecord {
           clearRewardOptionId ? null : rewardOptionId ?? this.rewardOptionId,
       rewardNameSnapshot: rewardNameSnapshot ?? this.rewardNameSnapshot,
       breakType: breakType ?? this.breakType,
-      feedbackOptionId:
-          clearFeedbackOptionId ? null : feedbackOptionId ?? this.feedbackOptionId,
+      feedbackOptionId: clearFeedbackOptionId
+          ? null
+          : feedbackOptionId ?? this.feedbackOptionId,
       feedbackNameSnapshot: feedbackNameSnapshot ?? this.feedbackNameSnapshot,
       pomodoroCount: pomodoroCount ?? this.pomodoroCount,
       points: points ?? this.points,
-      detailAmountText: clearDetailAmountText ? null : detailAmountText ?? this.detailAmountText,
-      questionCount: clearQuestionCount ? null : questionCount ?? this.questionCount,
+      detailAmountText: clearDetailAmountText
+          ? null
+          : detailAmountText ?? this.detailAmountText,
+      questionCount:
+          clearQuestionCount ? null : questionCount ?? this.questionCount,
       wrongCount: clearWrongCount ? null : wrongCount ?? this.wrongCount,
       outputType: clearOutputType ? null : outputType ?? this.outputType,
       weaknessTags: weaknessTags ?? this.weaknessTags,
@@ -114,6 +128,8 @@ class StudyRecord {
   Map<String, Object?> toMap({bool includeId = false}) {
     return {
       if (includeId) 'id': id,
+      'record_kind': recordKind,
+      'life_option_id': lifeOptionId,
       'occurred_at': occurredAt.toIso8601String(),
       'category_id': categoryId,
       'category_name_snapshot': categoryNameSnapshot,
@@ -142,6 +158,8 @@ class StudyRecord {
     final rewardNameSnapshot = map['reward_name_snapshot'] as String;
     return StudyRecord(
       id: map['id'] as int?,
+      recordKind: (map['record_kind'] as String?) ?? 'study',
+      lifeOptionId: map['life_option_id'] as int?,
       occurredAt: DateTime.parse(map['occurred_at'] as String),
       categoryId: map['category_id'] as int?,
       categoryNameSnapshot: map['category_name_snapshot'] as String,
@@ -150,7 +168,8 @@ class StudyRecord {
       rewardOptionId: map['reward_option_id'] as int?,
       rewardNameSnapshot: rewardNameSnapshot,
       breakType: map['break_type'] as String?,
-      feedbackOptionId: map['feedback_option_id'] as int? ?? map['reward_option_id'] as int?,
+      feedbackOptionId:
+          map['feedback_option_id'] as int? ?? map['reward_option_id'] as int?,
       feedbackNameSnapshot:
           map['feedback_name_snapshot'] as String? ?? rewardNameSnapshot,
       pomodoroCount: map['pomodoro_count'] as int,
