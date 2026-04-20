@@ -59,7 +59,15 @@ class _RecordsModeBody extends StatefulWidget {
 }
 
 class _RecordsModeBodyState extends State<_RecordsModeBody> {
-  _RecordStatsMode _mode = _RecordStatsMode.study;
+  late _RecordStatsMode _mode;
+
+  @override
+  void initState() {
+    super.initState();
+    _mode = RecordSharedModeMemory.mode == RecordSharedMode.life
+        ? _RecordStatsMode.life
+        : _RecordStatsMode.study;
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -74,6 +82,9 @@ class _RecordsModeBodyState extends State<_RecordsModeBody> {
               onChanged: (value) {
                 setState(() {
                   _mode = value;
+                  RecordSharedModeMemory.mode = value == _RecordStatsMode.life
+                      ? RecordSharedMode.life
+                      : RecordSharedMode.study;
                 });
               },
             ),
@@ -159,6 +170,10 @@ class _RecordsBodyState extends State<_RecordsBody> {
             _SubPeriodSummarySection(
               granularity: statistics.granularity,
               items: statistics.subPeriodSummaries,
+              primaryMetricLabel: '番茄',
+              secondaryMetricLabel: '积分',
+              primaryValueSelector: (item) => item.pomodoroCount,
+              secondaryValueSelector: (item) => item.points,
               onTap: (item) async {
                 await controller.drillDownTo(item.granularity, item.anchorDate);
                 if (!mounted) {
@@ -370,30 +385,28 @@ class _LifeRecordsBody extends StatelessWidget {
               ),
             ),
             const SizedBox(height: 16),
-            Card(
-              child: Padding(
-                padding: const EdgeInsets.all(16),
-                child: Row(
-                  children: [
-                    Expanded(
-                      child: _LifeMetricItem(
-                        title: '生活记录数',
-                        value: '${controller.totalCount}',
-                        unit: '次',
-                      ),
-                    ),
-                    const SizedBox(width: 12),
-                    Expanded(
-                      child: _LifeMetricItem(
-                        title: '生活积分',
-                        value: '${controller.totalPoints}',
-                        unit: '分',
-                      ),
-                    ),
-                  ],
-                ),
-              ),
+            DualMetricSummaryCard(
+              leftTitle: '总完成次数',
+              leftUnit: '次',
+              leftSummary: controller.totalCountSummary,
+              rightTitle: '总生活积分',
+              rightUnit: '分',
+              rightSummary: controller.totalPointsSummary,
             ),
+            if (controller.subPeriodSummaries.isNotEmpty) ...[
+              const SizedBox(height: 16),
+              _SubPeriodSummarySection(
+                granularity: controller.granularity,
+                items: controller.subPeriodSummaries,
+                primaryMetricLabel: '完成',
+                secondaryMetricLabel: '积分',
+                primaryValueSelector: (item) => item.recordCount,
+                secondaryValueSelector: (item) => item.points,
+                onTap: (item) async {
+                  await controller.setAnchorDate(item.anchorDate);
+                },
+              ),
+            ],
             const SizedBox(height: 16),
             Text('习惯统计', style: Theme.of(context).textTheme.titleLarge),
             const SizedBox(height: 8),
@@ -509,35 +522,6 @@ class _LifeRecordsBody extends StatelessWidget {
         const SnackBar(content: Text('生活记录已删除')),
       );
     }
-  }
-}
-
-class _LifeMetricItem extends StatelessWidget {
-  const _LifeMetricItem({
-    required this.title,
-    required this.value,
-    required this.unit,
-  });
-
-  final String title;
-  final String value;
-  final String unit;
-
-  @override
-  Widget build(BuildContext context) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Text(title, style: Theme.of(context).textTheme.labelLarge),
-        const SizedBox(height: 8),
-        Text(
-          '$value $unit',
-          style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                fontWeight: FontWeight.w700,
-              ),
-        ),
-      ],
-    );
   }
 }
 
@@ -736,10 +720,18 @@ class _SubPeriodSummarySection extends StatefulWidget {
   const _SubPeriodSummarySection({
     required this.granularity,
     required this.items,
+    required this.primaryMetricLabel,
+    required this.secondaryMetricLabel,
+    required this.primaryValueSelector,
+    required this.secondaryValueSelector,
     required this.onTap,
   });
   final TimeGranularity granularity;
   final List<SubPeriodSummary> items;
+  final String primaryMetricLabel;
+  final String secondaryMetricLabel;
+  final int Function(SubPeriodSummary item) primaryValueSelector;
+  final int Function(SubPeriodSummary item) secondaryValueSelector;
   final Future<void> Function(SubPeriodSummary item) onTap;
   @override
   State<_SubPeriodSummarySection> createState() =>
@@ -747,7 +739,7 @@ class _SubPeriodSummarySection extends StatefulWidget {
 }
 
 class _SubPeriodSummarySectionState extends State<_SubPeriodSummarySection> {
-  _SubPeriodMetric _metric = _SubPeriodMetric.pomodoro;
+  _SubPeriodMetric _metric = _SubPeriodMetric.primary;
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
@@ -764,6 +756,8 @@ class _SubPeriodSummarySectionState extends State<_SubPeriodSummarySection> {
                 ),
                 _MetricSegmentedSwitch(
                   value: _metric,
+                  primaryLabel: widget.primaryMetricLabel,
+                  secondaryLabel: widget.secondaryMetricLabel,
                   onChanged: (value) {
                     setState(() {
                       _metric = value;
@@ -777,6 +771,8 @@ class _SubPeriodSummarySectionState extends State<_SubPeriodSummarySection> {
               granularity: widget.granularity,
               items: widget.items,
               metric: _metric,
+              primaryValueSelector: widget.primaryValueSelector,
+              secondaryValueSelector: widget.secondaryValueSelector,
               onTap: widget.onTap,
             ),
           ],
@@ -799,14 +795,18 @@ class _SubPeriodSummarySectionState extends State<_SubPeriodSummarySection> {
   }
 }
 
-enum _SubPeriodMetric { pomodoro, points }
+enum _SubPeriodMetric { primary, secondary }
 
 class _MetricSegmentedSwitch extends StatelessWidget {
   const _MetricSegmentedSwitch({
     required this.value,
+    required this.primaryLabel,
+    required this.secondaryLabel,
     required this.onChanged,
   });
   final _SubPeriodMetric value;
+  final String primaryLabel;
+  final String secondaryLabel;
   final ValueChanged<_SubPeriodMetric> onChanged;
   @override
   Widget build(BuildContext context) {
@@ -850,8 +850,8 @@ class _MetricSegmentedSwitch extends StatelessWidget {
       ),
       child: Row(
         children: [
-          buildItem(_SubPeriodMetric.pomodoro, '\u756a\u8304'),
-          buildItem(_SubPeriodMetric.points, '\u79ef\u5206'),
+          buildItem(_SubPeriodMetric.primary, primaryLabel),
+          buildItem(_SubPeriodMetric.secondary, secondaryLabel),
         ],
       ),
     );
@@ -863,11 +863,15 @@ class _SubPeriodBarChart extends StatelessWidget {
     required this.granularity,
     required this.items,
     required this.metric,
+    required this.primaryValueSelector,
+    required this.secondaryValueSelector,
     required this.onTap,
   });
   final TimeGranularity granularity;
   final List<SubPeriodSummary> items;
   final _SubPeriodMetric metric;
+  final int Function(SubPeriodSummary item) primaryValueSelector;
+  final int Function(SubPeriodSummary item) secondaryValueSelector;
   final Future<void> Function(SubPeriodSummary item) onTap;
   @override
   Widget build(BuildContext context) {
@@ -875,9 +879,11 @@ class _SubPeriodBarChart extends StatelessWidget {
       return const SizedBox.shrink();
     }
     final values = items
-        .map((item) => metric == _SubPeriodMetric.pomodoro
-            ? item.pomodoroCount
-            : item.points)
+        .map(
+          (item) => metric == _SubPeriodMetric.primary
+              ? primaryValueSelector(item)
+              : secondaryValueSelector(item),
+        )
         .toList(growable: false);
     final maxValue = values.fold<int>(0, math.max);
     final chartHeight = switch (granularity) {

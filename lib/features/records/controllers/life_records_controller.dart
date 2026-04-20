@@ -1,6 +1,7 @@
 import 'package:flutter/foundation.dart';
 
 import '../../../app/app_services.dart';
+import '../../../core/utils/statistics_calculator.dart';
 import '../../../core/utils/study_date_utils.dart';
 import '../../../data/models/statistics_models.dart';
 import '../../../data/models/study_record.dart';
@@ -20,6 +21,7 @@ class LifeRecordsController extends ChangeNotifier {
 
   final StudyRecordRepository studyRecordRepository;
   final DataSyncNotifier dataSyncNotifier;
+  final StatisticsCalculator _calculator = StatisticsCalculator();
   late final VoidCallback _syncListener;
 
   bool isLoading = true;
@@ -30,6 +32,41 @@ class LifeRecordsController extends ChangeNotifier {
   List<LifeHabitSummary> habitSummaries = const [];
   int totalPoints = 0;
   int totalCount = 0;
+  MetricSummary totalCountSummary = const MetricSummary(
+    current: 0,
+    ring: ComparisonValue(
+      current: 0,
+      compareValue: 0,
+      delta: 0,
+      percentText: '0%',
+      direction: TrendDirection.flat,
+    ),
+    yoy: ComparisonValue(
+      current: 0,
+      compareValue: 0,
+      delta: 0,
+      percentText: '0%',
+      direction: TrendDirection.flat,
+    ),
+  );
+  MetricSummary totalPointsSummary = const MetricSummary(
+    current: 0,
+    ring: ComparisonValue(
+      current: 0,
+      compareValue: 0,
+      delta: 0,
+      percentText: '0%',
+      direction: TrendDirection.flat,
+    ),
+    yoy: ComparisonValue(
+      current: 0,
+      compareValue: 0,
+      delta: 0,
+      percentText: '0%',
+      direction: TrendDirection.flat,
+    ),
+  );
+  List<SubPeriodSummary> subPeriodSummaries = const [];
 
   Future<void> load() async {
     try {
@@ -38,14 +75,38 @@ class LifeRecordsController extends ChangeNotifier {
       notifyListeners();
       final currentPeriod =
           StudyDateUtils.buildPeriodRange(granularity, anchorDate);
+      final previousPeriod =
+          StudyDateUtils.previousPeriod(granularity, anchorDate);
+      final yoyPeriod =
+          StudyDateUtils.yearOverYearPeriod(granularity, anchorDate);
       final records = await studyRecordRepository.getLifeRecordsBetween(
         currentPeriod.start,
         currentPeriod.endExclusive,
+      );
+      final previousRecords = await studyRecordRepository.getLifeRecordsBetween(
+        previousPeriod.start,
+        previousPeriod.endExclusive,
+      );
+      final yoyRecords = await studyRecordRepository.getLifeRecordsBetween(
+        yoyPeriod.start,
+        yoyPeriod.endExclusive,
       );
       details = records;
       totalCount = records.length;
       totalPoints = records.fold<int>(0, (sum, item) => sum + item.points);
       habitSummaries = _buildHabitSummaries(records);
+      final bundle = _calculator.build(
+        granularity: granularity,
+        anchorDate: anchorDate,
+        currentRecords: records,
+        breakdownRecords: records,
+        previousRecords: previousRecords,
+        yoyRecords: yoyRecords,
+        configuredCategoryNames: const ['生活'],
+      );
+      totalCountSummary = bundle.totalPomodoro;
+      totalPointsSummary = bundle.totalPoints;
+      subPeriodSummaries = bundle.subPeriodSummaries;
     } catch (error) {
       errorMessage = error.toString();
     } finally {
