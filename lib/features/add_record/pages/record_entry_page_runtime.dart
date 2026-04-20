@@ -857,7 +857,7 @@ class _LifeHabitGroups extends StatelessWidget {
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Text(
-                '${tier.title} · ${score}分',
+                '${tier.title} · $score分',
                 style: Theme.of(context).textTheme.titleSmall?.copyWith(
                       color: Theme.of(context).colorScheme.onSurfaceVariant,
                       fontWeight: FontWeight.w700,
@@ -888,7 +888,7 @@ class _LifeHabitGroups extends StatelessWidget {
                   return Opacity(
                     opacity: canSelect ? 1 : 0.46,
                     child: ChoiceChip(
-                      label: Text('${option.name}（${option.points}分）'),
+                      label: Text(option.name),
                       selected: selected,
                       onSelected: canSelect ? (_) => onSelect(option) : null,
                     ),
@@ -951,6 +951,10 @@ class _LifePointsSummarySection extends StatelessWidget {
   final int? selectedOptionPoints;
   final DateTime occurredAt;
   static const Set<String> singleRecordHabitKeys = {
+    'neck_shoulder_relax',
+    'light_exercise',
+    'morning_no_bed_phone',
+    'night_no_video_or_game_binge',
     'wake_up_leave_bed',
     'home_wash_immediately',
     'in_bed_before_22',
@@ -1131,8 +1135,7 @@ class _LifePointsSummarySection extends StatelessWidget {
       return 'morning_no_bed_phone';
     }
     if (normalized.contains('回家') &&
-        (normalized.contains('洗漱') || normalized.contains('洗澡')) &&
-        (normalized.contains('刷视频') || normalized.contains('游戏'))) {
+        (normalized.contains('洗漱') || normalized.contains('洗澡'))) {
       return 'home_wash_immediately';
     }
     if (normalized.contains('晚上') &&
@@ -1148,7 +1151,10 @@ class _LifePointsSummarySection extends StatelessWidget {
     if ((normalized.contains('23:00') ||
             normalized.contains('23点') ||
             normalized.contains('23點')) &&
-        normalized.contains('22:30')) {
+        (normalized.contains('22:30') ||
+            normalized.contains('打卡') ||
+            normalized.contains('手机') ||
+            normalized.contains('手機'))) {
       return 'sleep_before_23_and_no_phone_after_2230';
     }
     if (normalized.contains('肩颈') ||

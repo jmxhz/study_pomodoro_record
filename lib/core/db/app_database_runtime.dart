@@ -474,6 +474,7 @@ class AppDatabase {
     await _seedSessionGapSettingIfNeeded(db);
     await _seedThemePaletteIfNeeded(db);
     await _seedLifeOptionsIfNeeded(db);
+    await _syncLifeOptionDefaults(db);
     await _syncContentStudyTypes(db);
   }
 
@@ -497,6 +498,7 @@ class AppDatabase {
     await _seedLongBreakSettingIfNeeded(db);
     await _seedSessionGapSettingIfNeeded(db);
     await _seedLifeOptionsIfNeeded(db);
+    await _syncLifeOptionDefaults(db);
     await _syncContentStudyTypes(db);
   }
 
@@ -506,15 +508,14 @@ class AppDatabase {
     }
     final now = DateTime.now().toIso8601String();
     const defaults = [
-      ('起床后立刻离床', 3),
+      ('肩颈放松', 1),
+      ('轻度锻炼', 1),
+      ('起床后立刻离床', 2),
+      ('回家后立刻洗漱', 2),
       ('早晨未在床上刷视频', 3),
-      ('回家后立刻洗漱', 3),
-      ('晚上未刷视频/未玩游戏', 4),
-      ('22点前上床', 5),
-      ('23点前睡觉', 5),
-      ('22:30打卡后未继续玩手机', 5),
-      ('肩颈放松', 4),
-      ('轻度锻炼', 4),
+      ('晚上未刷视频/未玩游戏失控', 3),
+      ('22:00 前上床', 4),
+      ('23:00 前睡觉，且打卡后不再玩手机', 4),
     ];
     await db.transaction((txn) async {
       for (var index = 0; index < defaults.length; index++) {
@@ -527,6 +528,101 @@ class AppDatabase {
           'created_at': now,
           'updated_at': now,
         });
+      }
+    });
+  }
+
+  Future<void> _syncLifeOptionDefaults(Database db) async {
+    final now = DateTime.now().toIso8601String();
+    const defaults = [
+      ('肩颈放松', 1),
+      ('轻度锻炼', 1),
+      ('起床后立刻离床', 2),
+      ('回家后立刻洗漱', 2),
+      ('早晨未在床上刷视频', 3),
+      ('晚上未刷视频/未玩游戏失控', 3),
+      ('22:00 前上床', 4),
+      ('23:00 前睡觉，且打卡后不再玩手机', 4),
+    ];
+    const legacyToCanonical = {
+      '22点前上床': '22:00 前上床',
+      '23点前睡觉': '23:00 前睡觉，且打卡后不再玩手机',
+      '22:30打卡后未继续玩手机': '23:00 前睡觉，且打卡后不再玩手机',
+      '晚上未刷视频/未玩游戏': '晚上未刷视频/未玩游戏失控',
+    };
+    const managedNames = {
+      '肩颈放松',
+      '轻度锻炼',
+      '起床后立刻离床',
+      '回家后立刻洗漱',
+      '早晨未在床上刷视频',
+      '晚上未刷视频/未玩游戏失控',
+      '22:00 前上床',
+      '23:00 前睡觉，且打卡后不再玩手机',
+      '22点前上床',
+      '23点前睡觉',
+      '22:30打卡后未继续玩手机',
+      '晚上未刷视频/未玩游戏',
+    };
+
+    final rows = await db.query('life_options');
+    final rowByName = <String, Map<String, Object?>>{
+      for (final row in rows) (row['name'] as String): row,
+    };
+
+    await db.transaction((txn) async {
+      for (var index = 0; index < defaults.length; index++) {
+        final targetName = defaults[index].$1;
+        final targetPoints = defaults[index].$2;
+        Map<String, Object?>? source = rowByName[targetName];
+        if (source == null) {
+          for (final entry in rowByName.entries) {
+            final canonical = legacyToCanonical[entry.key] ?? entry.key;
+            if (canonical == targetName) {
+              source = entry.value;
+              break;
+            }
+          }
+        }
+
+        if (source != null) {
+          await txn.update(
+            'life_options',
+            {
+              'name': targetName,
+              'points': targetPoints,
+              'sort_order': index,
+              'updated_at': now,
+            },
+            where: 'id = ?',
+            whereArgs: [source['id']],
+          );
+        } else {
+          await txn.insert('life_options', {
+            'name': targetName,
+            'points': targetPoints,
+            'sort_order': index,
+            'is_enabled': 1,
+            'created_at': now,
+            'updated_at': now,
+          });
+        }
+      }
+
+      final refreshed = await txn.query('life_options');
+      for (final row in refreshed) {
+        final name = row['name'] as String;
+        if (!managedNames.contains(name)) {
+          continue;
+        }
+        if (defaults.any((item) => item.$1 == name)) {
+          continue;
+        }
+        await txn.delete(
+          'life_options',
+          where: 'id = ?',
+          whereArgs: [row['id']],
+        );
       }
     });
   }
