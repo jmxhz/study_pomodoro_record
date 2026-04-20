@@ -827,7 +827,7 @@ class _LifeRecordFormBody extends StatelessWidget {
       return 'wake_up_leave_bed';
     }
     if (normalized.contains('回家') &&
-        normalized.contains('洗漱') &&
+        (normalized.contains('洗漱') || normalized.contains('洗澡')) &&
         (normalized.contains('刷视频') || normalized.contains('游戏'))) {
       return 'home_wash_immediately';
     }
@@ -927,7 +927,7 @@ class _LifeHabitGroups extends StatelessWidget {
                         child: Opacity(
                           opacity: canSelect ? 1 : 0.46,
                           child: Text(
-                            '${habit.title}（${habit.points}分）${!canSelect ? ' · 今日已完成' : ''}',
+                            '${habit.title}（${habit.points}分）',
                             style: Theme.of(context)
                                 .textTheme
                                 .bodyMedium
@@ -988,8 +988,14 @@ class _LifePointsSummarySection extends StatelessWidget {
             );
         final rate = ((data.currentPoints / 10) * 100).round();
         final theme = Theme.of(context);
-        final feedback = _feedbackText(data.currentPoints);
-        final reward = _rewardText(data.currentPoints);
+        final feedback = _feedbackText(
+          todayPoints: data.currentPoints,
+          currentEarnedPoints: data.currentEarnedPoints,
+        );
+        final reward = _rewardText(
+          todayPoints: data.currentPoints,
+          currentEarnedPoints: data.currentEarnedPoints,
+        );
         final suggestions = _missingSuggestions(data.completedHabitKeys);
 
         return Card(
@@ -1099,10 +1105,7 @@ class _LifePointsSummarySection extends StatelessWidget {
     final selectedAlreadyDone = selectedHabitKey != null &&
         singleRecordHabitKeys.contains(selectedHabitKey) &&
         completed.contains(selectedHabitKey);
-    if (selectedHabitKey != null && !selectedAlreadyDone) {
-      completed.add(selectedHabitKey);
-    }
-    if (completed.length >= 5 && bonusPoints == 0 && selectedHabitKey != null) {
+    if (completed.length >= 5 && bonusPoints == 0) {
       bonusPoints = 5;
     }
     if (bonusPoints > 5) {
@@ -1132,7 +1135,7 @@ class _LifePointsSummarySection extends StatelessWidget {
       return 'wake_up_leave_bed';
     }
     if (normalized.contains('回家') &&
-        normalized.contains('洗漱') &&
+        (normalized.contains('洗漱') || normalized.contains('洗澡')) &&
         (normalized.contains('刷视频') || normalized.contains('游戏'))) {
       return 'home_wash_immediately';
     }
@@ -1166,30 +1169,48 @@ class _LifePointsSummarySection extends StatelessWidget {
     return result;
   }
 
-  String _feedbackText(int currentPoints) {
-    if (currentPoints <= 2) {
-      return '今天至少完成了一个动作，这比完全放弃要好。先不要追求完美，明天优先守住一个最关键动作：起床后立刻离床，或者 22 点前上床。';
+  String _feedbackText({
+    required int todayPoints,
+    required int currentEarnedPoints,
+  }) {
+    if (todayPoints <= 2) {
+      if (currentEarnedPoints > 0) {
+        return '当前只完成了少量习惯，本次记录可以继续把节奏拉起来。';
+      }
+      return '当前只完成了少量习惯，先优先守住一个最关键动作。';
     }
-    if (currentPoints <= 6) {
-      return '今天已经完成了一半以上的生活习惯，说明节奏正在被你重新拿回来。继续优先守住早起不刷视频和睡前不碰手机，这两个习惯会明显降低内耗。';
+    if (todayPoints <= 4) {
+      if (currentEarnedPoints > 0) {
+        return '当前还没过半，本次记录能把今日进度继续往前推。';
+      }
+      return '当前还没过半，建议再补一条关键生活习惯记录。';
     }
-    if (currentPoints == 8) {
-      return '今天的生活节奏很好，关键习惯基本完成。你不是靠意志力硬撑，而是在把环境和动作顺序调整到更适合自己的状态。';
+    if (todayPoints <= 6) {
+      return '当前已过半，继续保持，优先守住晚间和睡前两个关键动作。';
     }
-    return '今天生活习惯全部完成。这个结果的价值不只是 10 分，而是你减少了刷视频、熬夜和身体紧张带来的连锁消耗。保持这种节奏，学习状态也会更稳。';
+    if (todayPoints <= 8) {
+      return '当前完成度较高，生活节奏在稳定下来。';
+    }
+    return '当前完成度很高，今天的生活习惯执行很完整。';
   }
 
-  String _rewardText(int currentPoints) {
-    if (currentPoints <= 2) {
-      return '你保住了今天的最低行动线，避免了完全失控。';
+  String _rewardText({
+    required int todayPoints,
+    required int currentEarnedPoints,
+  }) {
+    if (currentEarnedPoints <= 0) {
+      return '本次选择今日已记录或未选择，不会新增积分。';
     }
-    if (currentPoints <= 6) {
-      return '你减少了一部分无意识刷手机的时间，今晚的恢复质量会更好。';
+    if (todayPoints <= 2) {
+      return '你保住了今天的最低行动线。';
     }
-    if (currentPoints == 8) {
-      return '你完成了对身体和注意力的主动维护，这会直接支持明天的学习状态。';
+    if (todayPoints <= 6) {
+      return '你在减少无意识刷手机，今晚恢复质量会更好。';
     }
-    return '今天的生活节奏非常完整。奖励自己一个低刺激放松方式，比如听音乐、热水泡脚、简单拉伸，但不要用短视频或游戏作为奖励。';
+    if (todayPoints <= 8) {
+      return '你完成了对身体和注意力的主动维护。';
+    }
+    return '今天的生活节奏很完整，继续保持低刺激放松。';
   }
 }
 
