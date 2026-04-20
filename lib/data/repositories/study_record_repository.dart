@@ -55,7 +55,26 @@ class StudyRecordRepository {
     final db = await _database.database;
     return Sqflite.firstIntValue(
           await db.rawQuery(
-            "SELECT COALESCE(SUM(points), 0) FROM study_records WHERE record_kind IN ('study', 'life_bonus')",
+            '''
+            SELECT
+              COALESCE(
+                (SELECT SUM(points) FROM study_records WHERE record_kind = 'study'),
+                0
+              ) +
+              COALESCE(
+                (
+                  SELECT COUNT(*) * 5
+                  FROM (
+                    SELECT substr(occurred_at, 1, 10) AS life_day
+                    FROM study_records
+                    WHERE record_kind = 'life'
+                    GROUP BY life_day
+                    HAVING COALESCE(SUM(points), 0) >= 10
+                  )
+                ),
+                0
+              ) AS total_points
+            ''',
           ),
         ) ??
         0;
