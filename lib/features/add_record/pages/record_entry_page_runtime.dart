@@ -486,42 +486,62 @@ class _RecordFormBody extends StatelessWidget {
 
 class _LifeRecordFormBody extends StatelessWidget {
   const _LifeRecordFormBody();
-
   static const List<_LifeHabitItem> _habitItems = [
     _LifeHabitItem(
+      key: 'neck_shoulder_relax',
+      group: '1分',
+      title: '肩颈放松',
+      points: 1,
+      suggestion: '完成肩颈放松，建议 5 分钟以上。',
+    ),
+    _LifeHabitItem(
+      key: 'light_exercise',
+      group: '1分',
+      title: '轻度锻炼',
+      points: 1,
+      suggestion: '完成轻度锻炼，建议 10 分钟以上。',
+    ),
+    _LifeHabitItem(
       key: 'wake_up_leave_bed',
-      group: '晨间启动',
-      title: '起床后立刻离床，未在床上刷视频',
+      group: '2分',
+      title: '起床后立刻离床',
       points: 2,
-      suggestion: '明早醒来后不要先判断累不累，先完成起身、离床、喝水这三个动作，再决定接下来做什么。',
+      suggestion: '醒来后尽快离床，不继续赖床。',
     ),
     _LifeHabitItem(
       key: 'home_wash_immediately',
-      group: '晚间启动',
-      title: '回家后立刻洗漱，未先刷视频或玩游戏',
+      group: '2分',
+      title: '回家后立刻洗漱',
       points: 2,
-      suggestion: '回家后的前 10 分钟最关键。建议把洗漱当成回家后的默认启动动作，不给刷视频和游戏留下入口。',
+      suggestion: '回家后先洗漱，不先进入娱乐状态。',
+    ),
+    _LifeHabitItem(
+      key: 'morning_no_bed_phone',
+      group: '3分',
+      title: '早晨未在床上刷视频',
+      points: 3,
+      suggestion: '醒来后不刷短视频和信息流。',
+    ),
+    _LifeHabitItem(
+      key: 'night_no_video_or_game_binge',
+      group: '3分',
+      title: '晚上未刷视频/未玩游戏失控',
+      points: 3,
+      suggestion: '晚上不因视频或游戏拖延洗漱和睡觉。',
     ),
     _LifeHabitItem(
       key: 'in_bed_before_22',
-      group: '睡眠前置',
+      group: '4分',
       title: '22:00 前上床',
-      points: 2,
-      suggestion: '今晚的问题可能不是睡觉晚，而是上床动作启动太晚。明天可以把 21:40 作为停止娱乐和收尾的提醒点。',
+      points: 4,
+      suggestion: '22:00 前上床，开始进入睡前状态。',
     ),
     _LifeHabitItem(
       key: 'sleep_before_23_and_no_phone_after_2230',
-      group: '睡眠目标',
-      title: '23:00 前入睡，且 22:30 打卡后未继续玩手机',
-      points: 2,
-      suggestion: '22:30 打卡后不要再开启任何新的内容。打卡应该是结束信号，不是继续玩手机前的仪式。',
-    ),
-    _LifeHabitItem(
-      key: 'neck_shoulder_relax_or_light_exercise',
-      group: '身体恢复',
-      title: '肩颈放松或轻度锻炼',
-      points: 2,
-      suggestion: '肩颈放松优先级很高，即使只做 3-5 分钟，也比完全不做更有价值。这个习惯不要和高强度运动绑定。',
+      group: '4分',
+      title: '23:00 前睡觉，且打卡后不再玩手机',
+      points: 4,
+      suggestion: '22:30 后不刷视频和游戏，23:00 前入睡。',
     ),
   ];
 
@@ -575,17 +595,19 @@ class _LifeRecordFormBody extends StatelessWidget {
                       future: _LifePointsSummarySection.loadSnapshot(
                         context: context,
                         selectedHabitKey:
-                            _resolveHabitKey(controller.selectedOption?.name),
+                            _LifePointsSummarySection._resolveHabitKeyStatic(
+                                controller.selectedOption?.name),
                         selectedOptionPoints: controller.selectedOption?.points,
                         occurredAt: controller.occurredAt,
                       ),
                       builder: (context, snapshot) {
                         final selectedOption = controller.selectedOption;
-                        final selectedKey =
-                            _resolveHabitKey(selectedOption?.name);
                         final completedKeys =
                             snapshot.data?.completedHabitKeys ??
                                 const <String>{};
+                        final selectedKey =
+                            _LifePointsSummarySection._resolveHabitKeyStatic(
+                                selectedOption?.name);
                         final selectedBlocked = selectedKey != null &&
                             _LifePointsSummarySection.singleRecordHabitKeys
                                 .contains(selectedKey) &&
@@ -593,7 +615,9 @@ class _LifeRecordFormBody extends StatelessWidget {
                         if (selectedBlocked) {
                           final fallback = controller.lifeOptions
                               .where((option) {
-                                final key = _resolveHabitKey(option.name);
+                                final key =
+                                    _LifePointsSummarySection._resolveHabitKeyStatic(
+                                        option.name);
                                 if (key == null) {
                                   return true;
                                 }
@@ -629,7 +653,8 @@ class _LifeRecordFormBody extends StatelessWidget {
             _LifePointsSummarySection(
               habits: _habitItems,
               selectedHabitKey:
-                  _resolveHabitKey(controller.selectedOption?.name),
+                  _LifePointsSummarySection._resolveHabitKeyStatic(
+                      controller.selectedOption?.name),
               selectedOptionPoints: controller.selectedOption?.points,
               occurredAt: controller.occurredAt,
             ),
@@ -758,7 +783,8 @@ class _LifeRecordFormBody extends StatelessWidget {
     LifeRecordEntryController controller,
   ) async {
     try {
-      final selectedKey = _resolveHabitKey(controller.selectedOption?.name);
+      final selectedKey = _LifePointsSummarySection._resolveHabitKeyStatic(
+          controller.selectedOption?.name);
       final snapshot = await _LifePointsSummarySection.loadSnapshot(
         context: context,
         selectedHabitKey: selectedKey,
@@ -790,42 +816,6 @@ class _LifeRecordFormBody extends StatelessWidget {
     }
   }
 
-  String? _resolveHabitKey(String? name) {
-    if (name == null || name.trim().isEmpty) {
-      return null;
-    }
-    final normalized = name
-        .replaceAll(RegExp(r'\s+'), '')
-        .replaceAll('：', ':')
-        .replaceAll('，', ',')
-        .toLowerCase();
-    if (normalized.contains('起床') && normalized.contains('离床')) {
-      return 'wake_up_leave_bed';
-    }
-    if (normalized.contains('回家') &&
-        (normalized.contains('洗漱') || normalized.contains('洗澡')) &&
-        (normalized.contains('刷视频') || normalized.contains('游戏'))) {
-      return 'home_wash_immediately';
-    }
-    if (normalized.contains('22:00') ||
-        normalized.contains('22点') ||
-        normalized.contains('22點')) {
-      return 'in_bed_before_22';
-    }
-    if ((normalized.contains('23:00') ||
-            normalized.contains('23点') ||
-            normalized.contains('23點')) &&
-        normalized.contains('22:30')) {
-      return 'sleep_before_23_and_no_phone_after_2230';
-    }
-    if (normalized.contains('肩颈') ||
-        normalized.contains('肩頸') ||
-        normalized.contains('锻炼') ||
-        normalized.contains('鍛鍊')) {
-      return 'neck_shoulder_relax_or_light_exercise';
-    }
-    return null;
-  }
 }
 
 class _LifeHabitGroups extends StatelessWidget {
@@ -843,28 +833,109 @@ class _LifeHabitGroups extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Wrap(
-      spacing: 8,
-      runSpacing: 8,
-      children: options.map((option) {
-        final key = _LifePointsSummarySection._resolveHabitKeyStatic(option.name);
-        final isSingle =
-            key != null && _LifePointsSummarySection.singleRecordHabitKeys.contains(key);
-        final isCompletedToday = key != null && completedHabitKeys.contains(key);
-        final canSelect = !(isSingle && isCompletedToday);
-        final selected = selectedOption?.id == option.id &&
-            selectedOption?.name == option.name;
-        return Opacity(
-          opacity: canSelect ? 1 : 0.46,
-          child: ChoiceChip(
-            label: Text('${option.name}（${option.points}分）'),
-            selected: selected,
-            onSelected: canSelect ? (_) => onSelect(option) : null,
+    final grouped = <int, List<LifeOption>>{
+      1: <LifeOption>[],
+      2: <LifeOption>[],
+      3: <LifeOption>[],
+      4: <LifeOption>[],
+    };
+    for (final option in options) {
+      final score = option.points.clamp(1, 4);
+      grouped[score]!.add(option);
+    }
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [1, 2, 3, 4]
+          .where((score) => grouped[score]!.isNotEmpty)
+          .map((score) {
+        final tier = _lifePointTier(score);
+        final items = grouped[score]!;
+        return Padding(
+          padding: const EdgeInsets.only(bottom: 12),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                '${tier.title} · ${score}分',
+                style: Theme.of(context).textTheme.titleSmall?.copyWith(
+                      color: Theme.of(context).colorScheme.onSurfaceVariant,
+                      fontWeight: FontWeight.w700,
+                    ),
+              ),
+              const SizedBox(height: 4),
+              Text(
+                tier.description,
+                style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                      color: Theme.of(context).colorScheme.onSurfaceVariant,
+                    ),
+              ),
+              const SizedBox(height: 8),
+              Wrap(
+                spacing: 8,
+                runSpacing: 8,
+                children: items.map((option) {
+                  final key =
+                      _LifePointsSummarySection._resolveHabitKeyStatic(option.name);
+                  final isSingle = key != null &&
+                      _LifePointsSummarySection.singleRecordHabitKeys
+                          .contains(key);
+                  final isCompletedToday =
+                      key != null && completedHabitKeys.contains(key);
+                  final canSelect = !(isSingle && isCompletedToday);
+                  final selected = selectedOption?.id == option.id &&
+                      selectedOption?.name == option.name;
+                  return Opacity(
+                    opacity: canSelect ? 1 : 0.46,
+                    child: ChoiceChip(
+                      label: Text('${option.name}（${option.points}分）'),
+                      selected: selected,
+                      onSelected: canSelect ? (_) => onSelect(option) : null,
+                    ),
+                  );
+                }).toList(growable: false),
+              ),
+            ],
           ),
         );
       }).toList(growable: false),
     );
   }
+}
+
+_LifePointTier _lifePointTier(int score) {
+  switch (score) {
+    case 1:
+      return const _LifePointTier(
+        title: '基础维护',
+        description: '完成后有帮助，但不是当天生活节奏的关键节点。',
+      );
+    case 2:
+      return const _LifePointTier(
+        title: '习惯支撑',
+        description: '能明显改善当天状态，但单独完成不一定能扭转节奏。',
+      );
+    case 3:
+      return const _LifePointTier(
+        title: '关键节点',
+        description: '会影响早晨或晚上的整体走向，是习惯链条中的重要转折点。',
+      );
+    default:
+      return const _LifePointTier(
+        title: '核心边界',
+        description: '直接对应最想改变的问题，是当天是否失控的核心判断。',
+      );
+  }
+}
+
+class _LifePointTier {
+  const _LifePointTier({
+    required this.title,
+    required this.description,
+  });
+
+  final String title;
+  final String description;
 }
 
 class _LifePointsSummarySection extends StatelessWidget {
@@ -1054,10 +1125,20 @@ class _LifePointsSummarySection extends StatelessWidget {
     if (normalized.contains('起床') && normalized.contains('离床')) {
       return 'wake_up_leave_bed';
     }
+    if (normalized.contains('早晨') &&
+        normalized.contains('床上') &&
+        normalized.contains('刷视频')) {
+      return 'morning_no_bed_phone';
+    }
     if (normalized.contains('回家') &&
         (normalized.contains('洗漱') || normalized.contains('洗澡')) &&
         (normalized.contains('刷视频') || normalized.contains('游戏'))) {
       return 'home_wash_immediately';
+    }
+    if (normalized.contains('晚上') &&
+        (normalized.contains('刷视频') || normalized.contains('游戏')) &&
+        (normalized.contains('失控') || normalized.contains('拖延'))) {
+      return 'night_no_video_or_game_binge';
     }
     if (normalized.contains('22:00') ||
         normalized.contains('22点') ||
@@ -1074,7 +1155,10 @@ class _LifePointsSummarySection extends StatelessWidget {
         normalized.contains('肩頸') ||
         normalized.contains('锻炼') ||
         normalized.contains('鍛鍊')) {
-      return 'neck_shoulder_relax_or_light_exercise';
+      if (normalized.contains('肩颈') || normalized.contains('肩頸')) {
+        return 'neck_shoulder_relax';
+      }
+      return 'light_exercise';
     }
     return null;
   }
