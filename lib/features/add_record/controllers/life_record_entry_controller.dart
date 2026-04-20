@@ -102,6 +102,18 @@ class LifeRecordEntryController extends ChangeNotifier {
 
       final now = DateTime.now();
       final option = selectedOption!;
+      final dayStart = DateTime(occurredAt.year, occurredAt.month, occurredAt.day);
+      final dayEnd = dayStart.add(const Duration(days: 1));
+      final todayRecords = await studyRecordRepository.getLifeRecordsBetween(
+        dayStart,
+        dayEnd,
+      );
+      final todayPoints = todayRecords.fold<int>(
+        0,
+        (sum, item) => sum + item.points,
+      );
+      final thresholdBonus =
+          todayPoints < 10 && (todayPoints + option.points) >= 10 ? 5 : 0;
       final record = StudyRecord(
         recordKind: 'life',
         lifeOptionId: option.id,
@@ -115,7 +127,7 @@ class LifeRecordEntryController extends ChangeNotifier {
         feedbackOptionId: null,
         feedbackNameSnapshot: null,
         pomodoroCount: 1,
-        points: option.points,
+        points: option.points + thresholdBonus,
         notes: notes,
         createdAt: now,
         updatedAt: now,

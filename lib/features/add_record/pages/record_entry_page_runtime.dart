@@ -492,56 +492,56 @@ class _LifeRecordFormBody extends StatelessWidget {
       group: '1分',
       title: '肩颈放松',
       points: 1,
-      suggestion: '完成肩颈放松，建议 5 分钟以上。',
+      suggestion: '肩颈放松优先级很高，即使只做 3-5 分钟，也比完全不做更好。',
     ),
     _LifeHabitItem(
       key: 'light_exercise',
       group: '1分',
       title: '轻度锻炼',
       points: 1,
-      suggestion: '完成轻度锻炼，建议 10 分钟以上。',
+      suggestion: '轻度锻炼先不要追求项目完美，今天能动起来就算建立了入口。',
     ),
     _LifeHabitItem(
       key: 'wake_up_leave_bed',
       group: '2分',
       title: '起床后立刻离床',
       points: 2,
-      suggestion: '醒来后尽快离床，不继续赖床。',
+      suggestion: '明早醒来后不要先判断累不累，先起身离床，再决定接下来做什么。',
     ),
     _LifeHabitItem(
       key: 'home_wash_immediately',
       group: '2分',
       title: '回家后立刻洗漱',
       points: 2,
-      suggestion: '回家后先洗漱，不先进入娱乐状态。',
+      suggestion: '回家后的前 15 分钟最关键。先洗漱，后面才不容易被娱乐拖走。',
     ),
     _LifeHabitItem(
       key: 'morning_no_bed_phone',
       group: '3分',
       title: '早晨未在床上刷视频',
       points: 3,
-      suggestion: '醒来后不刷短视频和信息流。',
+      suggestion: '床上不要做内容消费。醒来后第一件事是离开床，而不是打开视频。',
     ),
     _LifeHabitItem(
       key: 'night_no_video_or_game_binge',
       group: '3分',
       title: '晚上未刷视频/未玩游戏失控',
       points: 3,
-      suggestion: '晚上不因视频或游戏拖延洗漱和睡觉。',
+      suggestion: '今晚的问题不是娱乐本身，而是娱乐没有边界。明天先设一个停止时间。',
     ),
     _LifeHabitItem(
       key: 'in_bed_before_22',
       group: '4分',
       title: '22:00 前上床',
       points: 4,
-      suggestion: '22:00 前上床，开始进入睡前状态。',
+      suggestion: '熬夜通常不是从 23 点开始，而是从 22 点没有上床开始。',
     ),
     _LifeHabitItem(
       key: 'sleep_before_23_and_no_phone_after_2230',
       group: '4分',
       title: '23:00 前睡觉，且打卡后不再玩手机',
       points: 4,
-      suggestion: '22:30 后不刷视频和游戏，23:00 前入睡。',
+      suggestion: '22:30 打卡应该是结束信号，不是继续玩手机前的仪式。',
     ),
   ];
 
@@ -976,19 +976,18 @@ class _LifePointsSummarySection extends StatelessWidget {
             _LifeHabitSnapshot(
               currentPoints: 0,
               currentEarnedPoints: selectedHabitKey == null ? 0 : selectedPoints,
-              basePoints: 0,
-              bonusPoints: 0,
               completedHabitKeys: const <String>{},
             );
         final rate = ((data.currentPoints / 10) * 100).round();
+        final reached = data.currentPoints >= 10;
+        final gap = reached ? 0 : (10 - data.currentPoints);
+        final extra = reached ? (data.currentPoints - 10) : 0;
         final theme = Theme.of(context);
         final feedback = _feedbackText(
-          todayPoints: data.currentPoints,
-          currentEarnedPoints: data.currentEarnedPoints,
+          earnedPoints: data.currentEarnedPoints,
         );
         final reward = _rewardText(
-          todayPoints: data.currentPoints,
-          currentEarnedPoints: data.currentEarnedPoints,
+          earnedPoints: data.currentEarnedPoints,
         );
         final suggestions = _missingSuggestions(data.completedHabitKeys);
 
@@ -1025,7 +1024,15 @@ class _LifePointsSummarySection extends StatelessWidget {
                         ),
                       ),
                       const SizedBox(height: 4),
-                      Text('今日生活累计：${data.currentPoints} / 10 分'),
+                      Text('今日累计：${data.currentPoints} 分'),
+                      const SizedBox(height: 2),
+                      Text('今日状态：${reached ? '已达标' : '未达标'}'),
+                      const SizedBox(height: 2),
+                      Text(
+                        reached
+                            ? (extra > 0 ? '超额完成 $extra 分' : '距离达标还差：0 分')
+                            : '距离达标还差：$gap 分',
+                      ),
                       const SizedBox(height: 2),
                       Text('今日完成率：$rate%'),
                     ],
@@ -1053,14 +1060,11 @@ class _LifePointsSummarySection extends StatelessWidget {
                     ),
                   ),
                   const SizedBox(height: 6),
-                  ...suggestions.map((item) => Padding(
-                        padding: const EdgeInsets.only(bottom: 6),
-                        child: Text(
-                          '• $item',
-                          style: theme.textTheme.bodySmall?.copyWith(
-                            color: theme.colorScheme.onSurfaceVariant,
-                            height: 1.35,
-                          ),
+                  ...suggestions.map((item) => Text(
+                        item,
+                        style: theme.textTheme.bodySmall?.copyWith(
+                          color: theme.colorScheme.onSurfaceVariant,
+                          height: 1.35,
                         ),
                       )),
                 ],
@@ -1087,32 +1091,28 @@ class _LifePointsSummarySection extends StatelessWidget {
       dayEnd,
     );
     final completed = <String>{};
-    var bonusPoints = 0;
+    var todayPoints = 0;
     for (final record in records) {
+      todayPoints += record.points;
       final key = _resolveHabitKeyStatic(record.contentNameSnapshot);
       if (key != null) {
         completed.add(key);
-      }
-      if ((record.points - 2) > bonusPoints) {
-        bonusPoints = record.points - 2;
       }
     }
     final selectedAlreadyDone = selectedHabitKey != null &&
         singleRecordHabitKeys.contains(selectedHabitKey) &&
         completed.contains(selectedHabitKey);
-    if (completed.length >= 5 && bonusPoints == 0) {
-      bonusPoints = 5;
+    final selectedBaseEarned =
+        selectedAlreadyDone ? 0 : (selectedOptionPoints ?? 0);
+    var thresholdBonus = 0;
+    if (selectedBaseEarned > 0 &&
+        todayPoints < 10 &&
+        (todayPoints + selectedBaseEarned) >= 10) {
+      thresholdBonus = 5;
     }
-    if (bonusPoints > 5) {
-      bonusPoints = 5;
-    }
-    final basePoints = completed.length * 2;
     return _LifeHabitSnapshot(
-      currentPoints: basePoints + bonusPoints,
-      currentEarnedPoints:
-          selectedAlreadyDone ? 0 : (selectedOptionPoints ?? 0),
-      basePoints: basePoints,
-      bonusPoints: bonusPoints,
+      currentPoints: todayPoints,
+      currentEarnedPoints: selectedBaseEarned + thresholdBonus,
       completedHabitKeys: completed,
     );
   }
@@ -1170,57 +1170,72 @@ class _LifePointsSummarySection extends StatelessWidget {
   }
 
   List<String> _missingSuggestions(Set<String> completedKeys) {
-    final result = <String>[];
     for (final habit in habits) {
       if (!completedKeys.contains(habit.key)) {
-        result.add(habit.suggestion);
+        return [habit.suggestion];
       }
     }
-    return result;
+    return const <String>[];
   }
 
   String _feedbackText({
-    required int todayPoints,
-    required int currentEarnedPoints,
+    required int earnedPoints,
   }) {
-    if (todayPoints <= 2) {
-      if (currentEarnedPoints > 0) {
-        return '当前只完成了少量习惯，本次记录可以继续把节奏拉起来。';
-      }
-      return '当前只完成了少量习惯，先优先守住一个最关键动作。';
+    if (earnedPoints <= 0) {
+      return '请选择一个生活记录项后查看本次反馈。';
     }
-    if (todayPoints <= 4) {
-      if (currentEarnedPoints > 0) {
-        return '当前还没过半，本次记录能把今日进度继续往前推。';
-      }
-      return '当前还没过半，建议再补一条关键生活习惯记录。';
+    if (earnedPoints == 1) {
+      return '完成了一个基础维护动作。它看起来不大，但能减少身体和注意力的持续消耗。';
     }
-    if (todayPoints <= 6) {
-      return '当前已过半，继续保持，优先守住晚间和睡前两个关键动作。';
+    if (earnedPoints == 2) {
+      return '你完成了一个习惯支撑动作。这个动作能帮助今天的生活节奏往正确方向移动。';
     }
-    if (todayPoints <= 8) {
-      return '当前完成度较高，生活节奏在稳定下来。';
+    if (earnedPoints == 3) {
+      return '你守住了一个关键节点。它会明显降低刷视频、拖延或熬夜继续扩大的概率。';
     }
-    return '当前完成度很高，今天的生活习惯执行很完整。';
+    if (earnedPoints == 4) {
+      return '你守住了一个核心边界。这个动作会直接影响今晚的睡眠质量和明天的学习状态。';
+    }
+    if (earnedPoints <= 7) {
+      return '今天已经完成了一部分关键习惯，生活节奏开始稳定下来。接下来优先守住睡前边界，不要让手机把后半段时间拖走。';
+    }
+    if (earnedPoints <= 9) {
+      return '今天距离达标很近，说明大部分生活动作已经完成。最后差的不是能力，而是一个关键动作的启动。';
+    }
+    if (earnedPoints == 10) {
+      return '今天生活习惯已达标。你完成的不是简单打卡，而是在减少刷视频、熬夜和身体紧张带来的连锁消耗。';
+    }
+    return '今天生活习惯超额完成。你不仅守住了关键边界，还额外完成了身体维护或节奏优化。';
   }
 
   String _rewardText({
-    required int todayPoints,
-    required int currentEarnedPoints,
+    required int earnedPoints,
   }) {
-    if (currentEarnedPoints <= 0) {
+    if (earnedPoints <= 0) {
       return '本次选择今日已记录或未选择，不会新增积分。';
     }
-    if (todayPoints <= 2) {
-      return '你保住了今天的最低行动线。';
+    if (earnedPoints == 1) {
+      return '你保住了今天的最低行动线，避免了完全放弃。';
     }
-    if (todayPoints <= 6) {
-      return '你在减少无意识刷手机，今晚恢复质量会更好。';
+    if (earnedPoints == 2) {
+      return '你正在把生活节奏从“被手机和拖延带走”拉回到自己手里。';
     }
-    if (todayPoints <= 8) {
-      return '你完成了对身体和注意力的主动维护。';
+    if (earnedPoints == 3) {
+      return '你切断了一次容易失控的惯性，这比单纯多坚持几分钟更有价值。';
     }
-    return '今天的生活节奏很完整，继续保持低刺激放松。';
+    if (earnedPoints == 4) {
+      return '你完成了一次对生活节奏的关键保护。今天最重要的边界没有被打破。';
+    }
+    if (earnedPoints <= 7) {
+      return '你减少了一部分无意识消耗，今晚会比完全失控更容易恢复。';
+    }
+    if (earnedPoints <= 9) {
+      return '你已经把今天的大部分节奏拿回来了。再补一个关键动作，就能达标。';
+    }
+    if (earnedPoints == 10) {
+      return '今天可以给自己一个低刺激奖励，比如听音乐、泡脚、轻松拉伸，但不要用短视频或游戏作为奖励。';
+    }
+    return '今天的节奏非常完整。保持这种低消耗状态，比临时兴奋更能支持长期学习。';
   }
 }
 
@@ -1244,15 +1259,11 @@ class _LifeHabitSnapshot {
   const _LifeHabitSnapshot({
     required this.currentPoints,
     required this.currentEarnedPoints,
-    required this.basePoints,
-    required this.bonusPoints,
     required this.completedHabitKeys,
   });
 
   final int currentPoints;
   final int currentEarnedPoints;
-  final int basePoints;
-  final int bonusPoints;
   final Set<String> completedHabitKeys;
 }
 
