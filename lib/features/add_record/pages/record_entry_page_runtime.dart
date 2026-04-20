@@ -576,11 +576,13 @@ class _LifeRecordFormBody extends StatelessWidget {
                         context: context,
                         selectedHabitKey:
                             _resolveHabitKey(controller.selectedOption?.name),
+                        selectedOptionPoints: controller.selectedOption?.points,
                         occurredAt: controller.occurredAt,
                       ),
                       builder: (context, snapshot) {
+                        final selectedOption = controller.selectedOption;
                         final selectedKey =
-                            _resolveHabitKey(controller.selectedOption?.name);
+                            _resolveHabitKey(selectedOption?.name);
                         final completedKeys =
                             snapshot.data?.completedHabitKeys ??
                                 const <String>{};
@@ -589,34 +591,33 @@ class _LifeRecordFormBody extends StatelessWidget {
                                 .contains(selectedKey) &&
                             completedKeys.contains(selectedKey);
                         if (selectedBlocked) {
-                          final fallback = _habitItems
-                              .where(
-                                (item) => !(completedKeys.contains(item.key) &&
-                                    _LifePointsSummarySection
-                                        .singleRecordHabitKeys
-                                        .contains(item.key)),
-                              )
+                          final fallback = controller.lifeOptions
+                              .where((option) {
+                                final key = _resolveHabitKey(option.name);
+                                if (key == null) {
+                                  return true;
+                                }
+                                final isSingle = _LifePointsSummarySection
+                                    .singleRecordHabitKeys
+                                    .contains(key);
+                                final isDone = completedKeys.contains(key);
+                                return !(isSingle && isDone);
+                              })
                               .firstOrNull;
                           if (fallback != null) {
                             WidgetsBinding.instance.addPostFrameCallback((_) {
                               if (!context.mounted) {
                                 return;
                               }
-                              controller.selectLifeOption(
-                                _resolveLifeOption(controller, fallback),
-                              );
+                              controller.selectLifeOption(fallback);
                             });
                           }
                         }
                         return _LifeHabitGroups(
-                          habits: _habitItems,
-                          selectedKey: selectedBlocked ? null : selectedKey,
+                          options: controller.lifeOptions,
+                          selectedOption: selectedBlocked ? null : selectedOption,
                           completedHabitKeys: completedKeys,
-                          onSelect: (habit) {
-                            controller.selectLifeOption(
-                              _resolveLifeOption(controller, habit),
-                            );
-                          },
+                          onSelect: controller.selectLifeOption,
                         );
                       },
                     ),
@@ -629,6 +630,7 @@ class _LifeRecordFormBody extends StatelessWidget {
               habits: _habitItems,
               selectedHabitKey:
                   _resolveHabitKey(controller.selectedOption?.name),
+              selectedOptionPoints: controller.selectedOption?.points,
               occurredAt: controller.occurredAt,
             ),
             const SizedBox(height: 16),
@@ -760,6 +762,7 @@ class _LifeRecordFormBody extends StatelessWidget {
       final snapshot = await _LifePointsSummarySection.loadSnapshot(
         context: context,
         selectedHabitKey: selectedKey,
+        selectedOptionPoints: controller.selectedOption?.points,
         occurredAt: controller.occurredAt,
       );
       if (selectedKey != null &&
@@ -767,12 +770,6 @@ class _LifeRecordFormBody extends StatelessWidget {
               .contains(selectedKey) &&
           snapshot.completedHabitKeys.contains(selectedKey)) {
         throw StateError('该生活习惯今天已记录，不能重复记录。');
-      }
-      final option = controller.selectedOption;
-      if (option != null) {
-        controller.selectLifeOption(
-          option.copyWith(points: snapshot.currentEarnedPoints),
-        );
       }
       await controller.save();
       if (!context.mounted) {
@@ -791,27 +788,6 @@ class _LifeRecordFormBody extends StatelessWidget {
         ),
       );
     }
-  }
-
-  LifeOption _resolveLifeOption(
-    LifeRecordEntryController controller,
-    _LifeHabitItem habit,
-  ) {
-    for (final option in controller.lifeOptions) {
-      if (_resolveHabitKey(option.name) == habit.key) {
-        return option.copyWith(points: habit.points);
-      }
-    }
-    final now = DateTime.now();
-    return LifeOption(
-      id: null,
-      name: habit.title,
-      points: habit.points,
-      sortOrder: 0,
-      isEnabled: true,
-      createdAt: now,
-      updatedAt: now,
-    );
   }
 
   String? _resolveHabitKey(String? name) {
@@ -854,97 +830,36 @@ class _LifeRecordFormBody extends StatelessWidget {
 
 class _LifeHabitGroups extends StatelessWidget {
   const _LifeHabitGroups({
-    required this.habits,
-    required this.selectedKey,
+    required this.options,
+    required this.selectedOption,
     required this.completedHabitKeys,
     required this.onSelect,
   });
 
-  final List<_LifeHabitItem> habits;
-  final String? selectedKey;
+  final List<LifeOption> options;
+  final LifeOption? selectedOption;
   final Set<String> completedHabitKeys;
-  final ValueChanged<_LifeHabitItem> onSelect;
+  final ValueChanged<LifeOption> onSelect;
 
   @override
   Widget build(BuildContext context) {
-    final grouped = <String, List<_LifeHabitItem>>{};
-    for (final item in habits) {
-      grouped.putIfAbsent(item.group, () => <_LifeHabitItem>[]).add(item);
-    }
-
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: grouped.entries.map((entry) {
-        return Padding(
-          padding: const EdgeInsets.only(bottom: 12),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(
-                entry.key,
-                style: Theme.of(context).textTheme.titleSmall?.copyWith(
-                      color: Theme.of(context).colorScheme.onSurfaceVariant,
-                      fontWeight: FontWeight.w700,
-                    ),
-              ),
-              const SizedBox(height: 8),
-              Wrap(
-                spacing: 8,
-                runSpacing: 8,
-                children: entry.value.map((habit) {
-                  final isSingle = _LifePointsSummarySection
-                      .singleRecordHabitKeys
-                      .contains(habit.key);
-                  final isCompletedToday =
-                      completedHabitKeys.contains(habit.key);
-                  final canSelect = !(isSingle && isCompletedToday);
-                  final selected = selectedKey == habit.key;
-                  return ConstrainedBox(
-                    constraints:
-                        const BoxConstraints(minWidth: 140, maxWidth: 360),
-                    child: InkWell(
-                      borderRadius: BorderRadius.circular(12),
-                      onTap: canSelect ? () => onSelect(habit) : null,
-                      child: AnimatedContainer(
-                        duration: const Duration(milliseconds: 180),
-                        curve: Curves.easeOutCubic,
-                        padding: const EdgeInsets.fromLTRB(12, 10, 12, 10),
-                        decoration: BoxDecoration(
-                          color: selected
-                              ? Theme.of(context)
-                                  .colorScheme
-                                  .primaryContainer
-                                  .withValues(alpha: 0.42)
-                              : Theme.of(context).colorScheme.surface,
-                          borderRadius: BorderRadius.circular(12),
-                          border: Border.all(
-                            color: selected
-                                ? Theme.of(context).colorScheme.primary
-                                : Theme.of(context).colorScheme.outlineVariant,
-                            width: selected ? 1.35 : 1,
-                          ),
-                        ),
-                        child: Opacity(
-                          opacity: canSelect ? 1 : 0.46,
-                          child: Text(
-                            '${habit.title}（${habit.points}分）',
-                            style: Theme.of(context)
-                                .textTheme
-                                .bodyMedium
-                                ?.copyWith(
-                                  fontWeight: selected
-                                      ? FontWeight.w600
-                                      : FontWeight.w500,
-                                  height: 1.34,
-                                ),
-                          ),
-                        ),
-                      ),
-                    ),
-                  );
-                }).toList(growable: false),
-              ),
-            ],
+    return Wrap(
+      spacing: 8,
+      runSpacing: 8,
+      children: options.map((option) {
+        final key = _LifePointsSummarySection._resolveHabitKeyStatic(option.name);
+        final isSingle =
+            key != null && _LifePointsSummarySection.singleRecordHabitKeys.contains(key);
+        final isCompletedToday = key != null && completedHabitKeys.contains(key);
+        final canSelect = !(isSingle && isCompletedToday);
+        final selected = selectedOption?.id == option.id &&
+            selectedOption?.name == option.name;
+        return Opacity(
+          opacity: canSelect ? 1 : 0.46,
+          child: ChoiceChip(
+            label: Text('${option.name}（${option.points}分）'),
+            selected: selected,
+            onSelected: canSelect ? (_) => onSelect(option) : null,
           ),
         );
       }).toList(growable: false),
@@ -956,11 +871,13 @@ class _LifePointsSummarySection extends StatelessWidget {
   const _LifePointsSummarySection({
     required this.habits,
     required this.selectedHabitKey,
+    required this.selectedOptionPoints,
     required this.occurredAt,
   });
 
   final List<_LifeHabitItem> habits;
   final String? selectedHabitKey;
+  final int? selectedOptionPoints;
   final DateTime occurredAt;
   static const Set<String> singleRecordHabitKeys = {
     'wake_up_leave_bed',
@@ -975,13 +892,15 @@ class _LifePointsSummarySection extends StatelessWidget {
       future: loadSnapshot(
         context: context,
         selectedHabitKey: selectedHabitKey,
+        selectedOptionPoints: selectedOptionPoints,
         occurredAt: occurredAt,
       ),
       builder: (context, snapshot) {
+        final selectedPoints = selectedOptionPoints ?? 0;
         final data = snapshot.data ??
             _LifeHabitSnapshot(
-              currentPoints: selectedHabitKey == null ? 0 : 2,
-              currentEarnedPoints: selectedHabitKey == null ? 0 : 2,
+              currentPoints: 0,
+              currentEarnedPoints: selectedHabitKey == null ? 0 : selectedPoints,
               basePoints: 0,
               bonusPoints: 0,
               completedHabitKeys: const <String>{},
@@ -1081,6 +1000,7 @@ class _LifePointsSummarySection extends StatelessWidget {
   static Future<_LifeHabitSnapshot> loadSnapshot({
     required BuildContext context,
     required String? selectedHabitKey,
+    required int? selectedOptionPoints,
     required DateTime occurredAt,
   }) async {
     final services = context.read<AppServices>();
@@ -1115,7 +1035,7 @@ class _LifePointsSummarySection extends StatelessWidget {
     return _LifeHabitSnapshot(
       currentPoints: basePoints + bonusPoints,
       currentEarnedPoints:
-          selectedHabitKey == null || selectedAlreadyDone ? 0 : 2,
+          selectedAlreadyDone ? 0 : (selectedOptionPoints ?? 0),
       basePoints: basePoints,
       bonusPoints: bonusPoints,
       completedHabitKeys: completed,
