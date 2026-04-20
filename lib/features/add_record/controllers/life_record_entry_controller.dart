@@ -176,25 +176,24 @@ class LifeRecordEntryController extends ChangeNotifier {
 
   void _startClockTicker() {
     _clockTimer?.cancel();
-    _clockTimer = Timer.periodic(const Duration(seconds: 1), (_) {
+    _clockTimer = Timer.periodic(const Duration(minutes: 1), (_) {
       if (!_autoTrackCurrentTime) {
         return;
       }
       final now = DateTime.now();
-      if (!_sameSecond(occurredAt, now)) {
+      if (!_sameMinute(occurredAt, now)) {
         occurredAt = now;
         notifyListeners();
       }
     });
   }
 
-  bool _sameSecond(DateTime a, DateTime b) =>
+  bool _sameMinute(DateTime a, DateTime b) =>
       a.year == b.year &&
       a.month == b.month &&
       a.day == b.day &&
       a.hour == b.hour &&
-      a.minute == b.minute &&
-      a.second == b.second;
+      a.minute == b.minute;
 
   @override
   void dispose() {
