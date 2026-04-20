@@ -4,6 +4,7 @@ import 'package:provider/provider.dart';
 import '../../../app/app_services.dart';
 import '../../../core/utils/format_utils.dart';
 import '../../../core/utils/study_type_utils.dart';
+import '../../../data/models/life_option.dart';
 import '../../../features/settings/pages/settings_home_page_runtime.dart';
 import '../controllers/life_record_entry_controller.dart';
 import '../controllers/record_entry_controller_runtime.dart';
@@ -469,6 +470,49 @@ class _RecordFormBody extends StatelessWidget {
 class _LifeRecordFormBody extends StatelessWidget {
   const _LifeRecordFormBody();
 
+  static const List<_LifeHabitItem> _habitItems = [
+    _LifeHabitItem(
+      key: 'wake_up_leave_bed',
+      group: '晨间启动',
+      title: '起床后立刻离床，未在床上刷视频',
+      points: 2,
+      suggestion:
+          '明早醒来后不要先判断累不累，先完成起身、离床、喝水这三个动作，再决定接下来做什么。',
+    ),
+    _LifeHabitItem(
+      key: 'home_wash_immediately',
+      group: '晚间启动',
+      title: '回家后立刻洗漱，未先刷视频或玩游戏',
+      points: 2,
+      suggestion:
+          '回家后的前 10 分钟最关键。建议把洗漱当成回家后的默认启动动作，不给刷视频和游戏留下入口。',
+    ),
+    _LifeHabitItem(
+      key: 'in_bed_before_22',
+      group: '睡眠前置',
+      title: '22:00 前上床',
+      points: 2,
+      suggestion:
+          '今晚的问题可能不是睡觉晚，而是上床动作启动太晚。明天可以把 21:40 作为停止娱乐和收尾的提醒点。',
+    ),
+    _LifeHabitItem(
+      key: 'sleep_before_23_and_no_phone_after_2230',
+      group: '睡眠目标',
+      title: '23:00 前入睡，且 22:30 打卡后未继续玩手机',
+      points: 2,
+      suggestion:
+          '22:30 打卡后不要再开启任何新的内容。打卡应该是结束信号，不是继续玩手机前的仪式。',
+    ),
+    _LifeHabitItem(
+      key: 'neck_shoulder_relax_or_light_exercise',
+      group: '身体恢复',
+      title: '肩颈放松或轻度锻炼',
+      points: 2,
+      suggestion:
+          '肩颈放松优先级很高，即使只做 3-5 分钟，也比完全不做更有价值。这个习惯不要和高强度运动绑定。',
+    ),
+  ];
+
   @override
   Widget build(BuildContext context) {
     return Consumer<LifeRecordEntryController>(
@@ -504,45 +548,6 @@ class _LifeRecordFormBody extends StatelessWidget {
           );
         }
 
-        if (!controller.hasEnabledLifeOptions) {
-          return Padding(
-            padding: const EdgeInsets.all(16),
-            child: Column(
-              children: [
-                Card(
-                  child: Padding(
-                    padding: const EdgeInsets.all(24),
-                    child: Column(
-                      children: const [
-                        Icon(Icons.settings_suggest_outlined, size: 40),
-                        SizedBox(height: 12),
-                        Text('当前缺少可用生活记录项'),
-                        SizedBox(height: 8),
-                        Text(
-                          '请先到设置 > 内容管理 > 生活中配置记录项。',
-                          textAlign: TextAlign.center,
-                        ),
-                      ],
-                    ),
-                  ),
-                ),
-                const SizedBox(height: 16),
-                FilledButton.icon(
-                  onPressed: () {
-                    Navigator.of(context).push(
-                      MaterialPageRoute<void>(
-                        builder: (_) => const SettingsHomePage(),
-                      ),
-                    );
-                  },
-                  icon: const Icon(Icons.settings_outlined),
-                  label: const Text('打开设置'),
-                ),
-              ],
-            ),
-          );
-        }
-
         return ListView(
           padding: const EdgeInsets.all(16),
           children: [
@@ -552,31 +557,29 @@ class _LifeRecordFormBody extends StatelessWidget {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text(
-                      '生活记录项',
-                      style: Theme.of(context).textTheme.titleMedium,
-                    ),
+                    const _SectionTitle(title: '生活记录项'),
                     const SizedBox(height: 12),
-                    Wrap(
-                      spacing: 8,
-                      runSpacing: 8,
-                      children: controller.lifeOptions.map((item) {
-                        return ChoiceChip(
-                          label: Text('${item.name}（${item.points}分）'),
-                          selected: controller.selectedOption?.id == item.id &&
-                              controller.selectedOption?.name == item.name,
-                          onSelected: (_) => controller.selectLifeOption(item),
-                        );
-                      }).toList(growable: false),
+                    _LifeHabitGroups(
+                      habits: _habitItems,
+                      selectedKey: _resolveHabitKey(controller.selectedOption?.name),
+                      onSelect: (habit) {
+                        controller.selectLifeOption(_resolveLifeOption(controller, habit));
+                      },
                     ),
                     const SizedBox(height: 12),
                     Text(
-                      '无需选择分类，按当次完成的生活行为记录即可。',
+                      '生活积分用于习惯反馈，单日基础满分 10 分，与学习积分分开展示。',
                       style: Theme.of(context).textTheme.bodySmall,
                     ),
                   ],
                 ),
               ),
+            ),
+            const SizedBox(height: 16),
+            _LifePointsSummarySection(
+              habits: _habitItems,
+              selectedHabitKey: _resolveHabitKey(controller.selectedOption?.name),
+              occurredAt: controller.occurredAt,
             ),
             const SizedBox(height: 16),
             Card(
@@ -585,12 +588,12 @@ class _LifeRecordFormBody extends StatelessWidget {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text('备注', style: Theme.of(context).textTheme.titleMedium),
+                    const _SectionTitle(title: '备注'),
                     const SizedBox(height: 8),
                     TextField(
                       onChanged: controller.setNotes,
                       decoration: const InputDecoration(
-                        hintText: '可选：记录执行细节，例如锻炼项目、时长等',
+                        hintText: '可选：记录执行细节，例如阻碍点、触发动作或替代动作。',
                       ),
                     ),
                   ],
@@ -604,11 +607,9 @@ class _LifeRecordFormBody extends StatelessWidget {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text('时间', style: Theme.of(context).textTheme.titleMedium),
+                    const _SectionTitle(title: '时间'),
                     const SizedBox(height: 8),
-                    Text(
-                      '当前记录时间：${FormatUtils.formatDateTimeMinute(controller.occurredAt)}',
-                    ),
+                    Text('当前记录时间：${FormatUtils.formatDateTimeMinute(controller.occurredAt)}'),
                     const SizedBox(height: 12),
                     Row(
                       children: [
@@ -640,9 +641,7 @@ class _LifeRecordFormBody extends StatelessWidget {
                 child: LinearProgressIndicator(),
               ),
             FilledButton.icon(
-              onPressed: controller.isSaving
-                  ? null
-                  : () => _handleLifeSave(context, controller),
+              onPressed: controller.isSaving ? null : () => _handleLifeSave(context, controller),
               icon: const Icon(Icons.save_outlined),
               label: const Text('保存生活记录'),
             ),
@@ -722,8 +721,355 @@ class _LifeRecordFormBody extends StatelessWidget {
       );
     }
   }
+
+  LifeOption _resolveLifeOption(
+    LifeRecordEntryController controller,
+    _LifeHabitItem habit,
+  ) {
+    for (final option in controller.lifeOptions) {
+      if (_resolveHabitKey(option.name) == habit.key) {
+        return option.copyWith(points: habit.points);
+      }
+    }
+    final now = DateTime.now();
+    return LifeOption(
+      id: null,
+      name: habit.title,
+      points: habit.points,
+      sortOrder: 0,
+      isEnabled: true,
+      createdAt: now,
+      updatedAt: now,
+    );
+  }
+
+  String? _resolveHabitKey(String? name) {
+    if (name == null || name.trim().isEmpty) {
+      return null;
+    }
+    final normalized = name
+        .replaceAll(RegExp(r'\s+'), '')
+        .replaceAll('：', ':')
+        .replaceAll('，', ',')
+        .toLowerCase();
+    if (normalized.contains('起床') && normalized.contains('离床')) {
+      return 'wake_up_leave_bed';
+    }
+    if (normalized.contains('回家') &&
+        normalized.contains('洗漱') &&
+        (normalized.contains('刷视频') || normalized.contains('游戏'))) {
+      return 'home_wash_immediately';
+    }
+    if (normalized.contains('22:00') ||
+        normalized.contains('22点') ||
+        normalized.contains('22點')) {
+      return 'in_bed_before_22';
+    }
+    if ((normalized.contains('23:00') ||
+            normalized.contains('23点') ||
+            normalized.contains('23點')) &&
+        normalized.contains('22:30')) {
+      return 'sleep_before_23_and_no_phone_after_2230';
+    }
+    if (normalized.contains('肩颈') ||
+        normalized.contains('肩頸') ||
+        normalized.contains('锻炼') ||
+        normalized.contains('鍛鍊')) {
+      return 'neck_shoulder_relax_or_light_exercise';
+    }
+    return null;
+  }
 }
 
+class _LifeHabitGroups extends StatelessWidget {
+  const _LifeHabitGroups({
+    required this.habits,
+    required this.selectedKey,
+    required this.onSelect,
+  });
+
+  final List<_LifeHabitItem> habits;
+  final String? selectedKey;
+  final ValueChanged<_LifeHabitItem> onSelect;
+
+  @override
+  Widget build(BuildContext context) {
+    final grouped = <String, List<_LifeHabitItem>>{};
+    for (final item in habits) {
+      grouped.putIfAbsent(item.group, () => <_LifeHabitItem>[]).add(item);
+    }
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: grouped.entries.map((entry) {
+        return Padding(
+          padding: const EdgeInsets.only(bottom: 12),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                entry.key,
+                style: Theme.of(context).textTheme.titleSmall?.copyWith(
+                      color: Theme.of(context).colorScheme.onSurfaceVariant,
+                      fontWeight: FontWeight.w700,
+                    ),
+              ),
+              const SizedBox(height: 8),
+              Wrap(
+                spacing: 8,
+                runSpacing: 8,
+                children: entry.value.map((habit) {
+                  return ChoiceChip(
+                    label: Text('${habit.title}（${habit.points}分）'),
+                    selected: selectedKey == habit.key,
+                    onSelected: (_) => onSelect(habit),
+                  );
+                }).toList(growable: false),
+              ),
+            ],
+          ),
+        );
+      }).toList(growable: false),
+    );
+  }
+}
+
+class _LifePointsSummarySection extends StatelessWidget {
+  const _LifePointsSummarySection({
+    required this.habits,
+    required this.selectedHabitKey,
+    required this.occurredAt,
+  });
+
+  final List<_LifeHabitItem> habits;
+  final String? selectedHabitKey;
+  final DateTime occurredAt;
+
+  @override
+  Widget build(BuildContext context) {
+    return FutureBuilder<_LifeHabitSnapshot>(
+      future: _loadSnapshot(context),
+      builder: (context, snapshot) {
+        final data = snapshot.data ??
+            _LifeHabitSnapshot(
+              currentPoints: selectedHabitKey == null ? 0 : 2,
+              currentEarnedPoints: selectedHabitKey == null ? 0 : 2,
+              completedHabitKeys: selectedHabitKey == null
+                  ? const <String>{}
+                  : <String>{selectedHabitKey!},
+            );
+        final rate = ((data.currentPoints / 10) * 100).round();
+        final theme = Theme.of(context);
+        final feedback = _feedbackText(data.currentPoints);
+        final reward = _rewardText(data.currentPoints);
+        final suggestions = _missingSuggestions(data.completedHabitKeys);
+
+        return Card(
+          child: Padding(
+            padding: const EdgeInsets.all(16),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                const _SectionTitle(title: '本次生活积分'),
+                const SizedBox(height: 2),
+                Text(
+                  '今日习惯完成情况',
+                  style: theme.textTheme.titleSmall?.copyWith(
+                    color: theme.colorScheme.onSurfaceVariant,
+                  ),
+                ),
+                const SizedBox(height: 12),
+                Container(
+                  width: double.infinity,
+                  padding: const EdgeInsets.all(14),
+                  decoration: BoxDecoration(
+                    color: theme.colorScheme.surfaceContainerHighest
+                        .withValues(alpha: 0.18),
+                    borderRadius: BorderRadius.circular(16),
+                  ),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        '本次获得：${data.currentEarnedPoints} 分',
+                        style: theme.textTheme.titleMedium?.copyWith(
+                          fontWeight: FontWeight.w700,
+                        ),
+                      ),
+                      const SizedBox(height: 4),
+                      Text('今日生活累计：${data.currentPoints} / 10 分'),
+                      const SizedBox(height: 2),
+                      Text('今日完成率：$rate%'),
+                    ],
+                  ),
+                ),
+                const SizedBox(height: 12),
+                Text(
+                  feedback,
+                  style: theme.textTheme.bodyMedium?.copyWith(height: 1.35),
+                ),
+                const SizedBox(height: 8),
+                Text(
+                  '奖励：$reward',
+                  style: theme.textTheme.bodySmall?.copyWith(
+                    color: theme.colorScheme.onSurfaceVariant,
+                    height: 1.35,
+                  ),
+                ),
+                if (suggestions.isNotEmpty) ...[
+                  const SizedBox(height: 10),
+                  Text(
+                    '建议：',
+                    style: theme.textTheme.titleSmall?.copyWith(
+                      fontWeight: FontWeight.w700,
+                    ),
+                  ),
+                  const SizedBox(height: 6),
+                  ...suggestions.map((item) => Padding(
+                        padding: const EdgeInsets.only(bottom: 6),
+                        child: Text(
+                          '• $item',
+                          style: theme.textTheme.bodySmall?.copyWith(
+                            color: theme.colorScheme.onSurfaceVariant,
+                            height: 1.35,
+                          ),
+                        ),
+                      )),
+                ],
+              ],
+            ),
+          ),
+        );
+      },
+    );
+  }
+
+  Future<_LifeHabitSnapshot> _loadSnapshot(BuildContext context) async {
+    final services = context.read<AppServices>();
+    final dayStart = DateTime(occurredAt.year, occurredAt.month, occurredAt.day);
+    final dayEnd = dayStart.add(const Duration(days: 1));
+    final records = await services.studyRecordRepository.getLifeRecordsBetween(
+      dayStart,
+      dayEnd,
+    );
+    final completed = <String>{};
+    for (final record in records) {
+      final key = _resolveHabitKey(record.contentNameSnapshot);
+      if (key != null) {
+        completed.add(key);
+      }
+    }
+    if (selectedHabitKey != null) {
+      completed.add(selectedHabitKey!);
+    }
+    return _LifeHabitSnapshot(
+      currentPoints: completed.length * 2,
+      currentEarnedPoints: selectedHabitKey == null ? 0 : 2,
+      completedHabitKeys: completed,
+    );
+  }
+
+  String? _resolveHabitKey(String? name) {
+    if (name == null || name.trim().isEmpty) {
+      return null;
+    }
+    final normalized = name
+        .replaceAll(RegExp(r'\s+'), '')
+        .replaceAll('：', ':')
+        .replaceAll('，', ',')
+        .toLowerCase();
+    if (normalized.contains('起床') && normalized.contains('离床')) {
+      return 'wake_up_leave_bed';
+    }
+    if (normalized.contains('回家') &&
+        normalized.contains('洗漱') &&
+        (normalized.contains('刷视频') || normalized.contains('游戏'))) {
+      return 'home_wash_immediately';
+    }
+    if (normalized.contains('22:00') ||
+        normalized.contains('22点') ||
+        normalized.contains('22點')) {
+      return 'in_bed_before_22';
+    }
+    if ((normalized.contains('23:00') ||
+            normalized.contains('23点') ||
+            normalized.contains('23點')) &&
+        normalized.contains('22:30')) {
+      return 'sleep_before_23_and_no_phone_after_2230';
+    }
+    if (normalized.contains('肩颈') ||
+        normalized.contains('肩頸') ||
+        normalized.contains('锻炼') ||
+        normalized.contains('鍛鍊')) {
+      return 'neck_shoulder_relax_or_light_exercise';
+    }
+    return null;
+  }
+
+  List<String> _missingSuggestions(Set<String> completedKeys) {
+    final result = <String>[];
+    for (final habit in habits) {
+      if (!completedKeys.contains(habit.key)) {
+        result.add(habit.suggestion);
+      }
+    }
+    return result;
+  }
+
+  String _feedbackText(int currentPoints) {
+    if (currentPoints <= 2) {
+      return '今天至少完成了一个动作，这比完全放弃要好。先不要追求完美，明天优先守住一个最关键动作：起床后立刻离床，或者 22 点前上床。';
+    }
+    if (currentPoints <= 6) {
+      return '今天已经完成了一半以上的生活习惯，说明节奏正在被你重新拿回来。继续优先守住早起不刷视频和睡前不碰手机，这两个习惯会明显降低内耗。';
+    }
+    if (currentPoints == 8) {
+      return '今天的生活节奏很好，关键习惯基本完成。你不是靠意志力硬撑，而是在把环境和动作顺序调整到更适合自己的状态。';
+    }
+    return '今天生活习惯全部完成。这个结果的价值不只是 10 分，而是你减少了刷视频、熬夜和身体紧张带来的连锁消耗。保持这种节奏，学习状态也会更稳。';
+  }
+
+  String _rewardText(int currentPoints) {
+    if (currentPoints <= 2) {
+      return '你保住了今天的最低行动线，避免了完全失控。';
+    }
+    if (currentPoints <= 6) {
+      return '你减少了一部分无意识刷手机的时间，今晚的恢复质量会更好。';
+    }
+    if (currentPoints == 8) {
+      return '你完成了对身体和注意力的主动维护，这会直接支持明天的学习状态。';
+    }
+    return '今天的生活节奏非常完整。奖励自己一个低刺激放松方式，比如听音乐、热水泡脚、简单拉伸，但不要用短视频或游戏作为奖励。';
+  }
+}
+
+class _LifeHabitItem {
+  const _LifeHabitItem({
+    required this.key,
+    required this.group,
+    required this.title,
+    required this.points,
+    required this.suggestion,
+  });
+
+  final String key;
+  final String group;
+  final String title;
+  final int points;
+  final String suggestion;
+}
+
+class _LifeHabitSnapshot {
+  const _LifeHabitSnapshot({
+    required this.currentPoints,
+    required this.currentEarnedPoints,
+    required this.completedHabitKeys,
+  });
+
+  final int currentPoints;
+  final int currentEarnedPoints;
+  final Set<String> completedHabitKeys;
+}
 class _RecordModeSwitch extends StatelessWidget {
   const _RecordModeSwitch({
     required this.mode,
@@ -1273,3 +1619,4 @@ class _BoundTextFieldState extends State<_BoundTextField> {
     );
   }
 }
+
