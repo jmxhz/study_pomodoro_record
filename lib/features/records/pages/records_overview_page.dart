@@ -122,11 +122,11 @@ class _RecordsModeBodyState extends State<_RecordsModeBody> {
             child: TweenAnimationBuilder<Offset>(
               key: ValueKey<_RecordStatsMode>(_mode),
               tween: Tween<Offset>(
-                begin: Offset(_modeDirection * 0.14, 0),
+                begin: Offset(_modeDirection * 0.08, 0),
                 end: Offset.zero,
               ),
-              duration: const Duration(milliseconds: 300),
-              curve: Curves.easeOutBack,
+              duration: const Duration(milliseconds: 240),
+              curve: Curves.easeOutCubic,
               child: _mode == _RecordStatsMode.study
                   ? const _RecordsBody()
                   : const _LifeRecordsBody(),

@@ -54,6 +54,7 @@ class HomeShell extends StatefulWidget {
 
 class _HomeShellState extends State<HomeShell> {
   int _currentIndex = 0;
+  int _swipePosition = 0;
   static const double _kSwipeVelocityThreshold = 350;
   int _moduleDirection = 1;
 
@@ -64,6 +65,44 @@ class _HomeShellState extends State<HomeShell> {
     RewardsCenterPage(),
   ];
 
+  int _positionForIndex(int index) {
+    if (index == 0) {
+      return RecordSharedModeMemory.mode == RecordSharedMode.life ? 1 : 0;
+    }
+    if (index == 1) {
+      return RecordSharedModeMemory.mode == RecordSharedMode.life ? 3 : 2;
+    }
+    return 4;
+  }
+
+  void _applySwipePosition(int nextPosition) {
+    if (nextPosition == _swipePosition) {
+      return;
+    }
+    final bounded = nextPosition.clamp(0, 4);
+    final previousIndex = _currentIndex;
+    int nextIndex;
+    if (bounded <= 1) {
+      nextIndex = 0;
+      RecordSharedModeMemory.setMode(
+        bounded == 0 ? RecordSharedMode.study : RecordSharedMode.life,
+      );
+    } else if (bounded <= 3) {
+      nextIndex = 1;
+      RecordSharedModeMemory.setMode(
+        bounded == 2 ? RecordSharedMode.study : RecordSharedMode.life,
+      );
+    } else {
+      nextIndex = 2;
+    }
+
+    setState(() {
+      _swipePosition = bounded;
+      _moduleDirection = nextIndex > previousIndex ? 1 : -1;
+      _currentIndex = nextIndex;
+    });
+  }
+
   void _switchToIndex(int index) {
     if (index < 0 || index >= _pages.length || index == _currentIndex) {
       return;
@@ -71,6 +110,7 @@ class _HomeShellState extends State<HomeShell> {
     setState(() {
       _moduleDirection = index > _currentIndex ? 1 : -1;
       _currentIndex = index;
+      _swipePosition = _positionForIndex(index);
     });
   }
 
@@ -80,25 +120,7 @@ class _HomeShellState extends State<HomeShell> {
       return;
     }
     final isForward = velocity < 0;
-    if (_trySwitchRecordMode(isForward)) {
-      return;
-    }
-    _switchToIndex(isForward ? _currentIndex + 1 : _currentIndex - 1);
-  }
-
-  bool _trySwitchRecordMode(bool isForward) {
-    if (_currentIndex != 0 && _currentIndex != 1) {
-      return false;
-    }
-    if (isForward && RecordSharedModeMemory.mode == RecordSharedMode.study) {
-      RecordSharedModeMemory.setMode(RecordSharedMode.life);
-      return true;
-    }
-    if (!isForward && RecordSharedModeMemory.mode == RecordSharedMode.life) {
-      RecordSharedModeMemory.setMode(RecordSharedMode.study);
-      return true;
-    }
-    return false;
+    _applySwipePosition(_swipePosition + (isForward ? 1 : -1));
   }
 
   @override
@@ -127,11 +149,11 @@ class _HomeShellState extends State<HomeShell> {
           child: TweenAnimationBuilder<Offset>(
             key: ValueKey<int>(_currentIndex),
             tween: Tween<Offset>(
-              begin: Offset(_moduleDirection * 0.16, 0),
+              begin: Offset(_moduleDirection * 0.09, 0),
               end: Offset.zero,
             ),
-            duration: const Duration(milliseconds: 320),
-            curve: Curves.easeOutBack,
+            duration: const Duration(milliseconds: 260),
+            curve: Curves.easeOutCubic,
             child: _pages[_currentIndex],
             builder: (context, offset, child) {
               return FractionalTranslation(
