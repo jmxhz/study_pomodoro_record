@@ -35,6 +35,16 @@ enum RecordSharedMode { study, life }
 
 class RecordSharedModeMemory {
   static RecordSharedMode mode = RecordSharedMode.study;
+  static final ValueNotifier<RecordSharedMode> notifier =
+      ValueNotifier<RecordSharedMode>(mode);
+
+  static void setMode(RecordSharedMode value) {
+    if (mode == value) {
+      return;
+    }
+    mode = value;
+    notifier.value = value;
+  }
 }
 
 enum _RecordMode { study, life }
@@ -50,6 +60,7 @@ class _RecordModeBody extends StatefulWidget {
 
 class _RecordModeBodyState extends State<_RecordModeBody> {
   late _RecordMode _mode;
+  int _modeDirection = 1;
 
   @override
   void initState() {
@@ -57,6 +68,39 @@ class _RecordModeBodyState extends State<_RecordModeBody> {
     _mode = RecordSharedModeMemory.mode == RecordSharedMode.life
         ? _RecordMode.life
         : _RecordMode.study;
+    RecordSharedModeMemory.notifier.addListener(_syncModeFromMemory);
+  }
+
+  @override
+  void dispose() {
+    RecordSharedModeMemory.notifier.removeListener(_syncModeFromMemory);
+    super.dispose();
+  }
+
+  void _syncModeFromMemory() {
+    final nextMode = RecordSharedModeMemory.mode == RecordSharedMode.life
+        ? _RecordMode.life
+        : _RecordMode.study;
+    if (nextMode == _mode || !mounted) {
+      return;
+    }
+    setState(() {
+      _modeDirection = nextMode == _RecordMode.life ? 1 : -1;
+      _mode = nextMode;
+    });
+  }
+
+  void _setMode(_RecordMode value) {
+    if (_mode == value) {
+      return;
+    }
+    setState(() {
+      _modeDirection = value == _RecordMode.life ? 1 : -1;
+      _mode = value;
+      RecordSharedModeMemory.setMode(
+        value == _RecordMode.life ? RecordSharedMode.life : RecordSharedMode.study,
+      );
+    });
   }
 
   @override
@@ -67,20 +111,35 @@ class _RecordModeBodyState extends State<_RecordModeBody> {
           padding: const EdgeInsets.fromLTRB(16, 16, 16, 8),
           child: _RecordModeSwitch(
             mode: _mode,
-            onChanged: (value) {
-              setState(() {
-                _mode = value;
-                RecordSharedModeMemory.mode = value == _RecordMode.life
-                    ? RecordSharedMode.life
-                    : RecordSharedMode.study;
-              });
-            },
+            onChanged: _setMode,
           ),
         ),
         Expanded(
-          child: _mode == _RecordMode.study
-              ? const _StudyRecordFormHost(embedded: false)
-              : const _LifeRecordFormHost(),
+          child: AnimatedSwitcher(
+            duration: const Duration(milliseconds: 220),
+            switchInCurve: Curves.easeOutCubic,
+            switchOutCurve: Curves.easeOutCubic,
+            transitionBuilder: (child, animation) {
+              final begin = Offset(_modeDirection * 0.16, 0);
+              final offsetAnimation = Tween<Offset>(
+                begin: begin,
+                end: Offset.zero,
+              ).animate(animation);
+              return SlideTransition(
+                position: offsetAnimation,
+                child: FadeTransition(
+                  opacity: animation,
+                  child: child,
+                ),
+              );
+            },
+            child: KeyedSubtree(
+              key: ValueKey<_RecordMode>(_mode),
+              child: _mode == _RecordMode.study
+                  ? const _StudyRecordFormHost(embedded: false)
+                  : const _LifeRecordFormHost(),
+            ),
+          ),
         ),
       ],
     );

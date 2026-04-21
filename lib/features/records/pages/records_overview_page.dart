@@ -60,6 +60,7 @@ class _RecordsModeBody extends StatefulWidget {
 
 class _RecordsModeBodyState extends State<_RecordsModeBody> {
   late _RecordStatsMode _mode;
+  int _modeDirection = 1;
 
   @override
   void initState() {
@@ -67,6 +68,39 @@ class _RecordsModeBodyState extends State<_RecordsModeBody> {
     _mode = RecordSharedModeMemory.mode == RecordSharedMode.life
         ? _RecordStatsMode.life
         : _RecordStatsMode.study;
+    RecordSharedModeMemory.notifier.addListener(_syncModeFromMemory);
+  }
+
+  @override
+  void dispose() {
+    RecordSharedModeMemory.notifier.removeListener(_syncModeFromMemory);
+    super.dispose();
+  }
+
+  void _syncModeFromMemory() {
+    final nextMode = RecordSharedModeMemory.mode == RecordSharedMode.life
+        ? _RecordStatsMode.life
+        : _RecordStatsMode.study;
+    if (nextMode == _mode || !mounted) {
+      return;
+    }
+    setState(() {
+      _modeDirection = nextMode == _RecordStatsMode.life ? 1 : -1;
+      _mode = nextMode;
+    });
+  }
+
+  void _setMode(_RecordStatsMode value) {
+    if (_mode == value) {
+      return;
+    }
+    setState(() {
+      _modeDirection = value == _RecordStatsMode.life ? 1 : -1;
+      _mode = value;
+      RecordSharedModeMemory.setMode(
+        value == _RecordStatsMode.life ? RecordSharedMode.life : RecordSharedMode.study,
+      );
+    });
   }
 
   @override
@@ -79,21 +113,36 @@ class _RecordsModeBodyState extends State<_RecordsModeBody> {
             padding: const EdgeInsets.fromLTRB(16, 16, 16, 8),
             child: _RecordStatsModeSwitch(
               mode: _mode,
-              onChanged: (value) {
-                setState(() {
-                  _mode = value;
-                  RecordSharedModeMemory.mode = value == _RecordStatsMode.life
-                      ? RecordSharedMode.life
-                      : RecordSharedMode.study;
-                });
-              },
+              onChanged: _setMode,
             ),
           ),
         ),
         Expanded(
-          child: _mode == _RecordStatsMode.study
-              ? const _RecordsBody()
-              : const _LifeRecordsBody(),
+          child: AnimatedSwitcher(
+            duration: const Duration(milliseconds: 220),
+            switchInCurve: Curves.easeOutCubic,
+            switchOutCurve: Curves.easeOutCubic,
+            transitionBuilder: (child, animation) {
+              final begin = Offset(_modeDirection * 0.16, 0);
+              final offsetAnimation = Tween<Offset>(
+                begin: begin,
+                end: Offset.zero,
+              ).animate(animation);
+              return SlideTransition(
+                position: offsetAnimation,
+                child: FadeTransition(
+                  opacity: animation,
+                  child: child,
+                ),
+              );
+            },
+            child: KeyedSubtree(
+              key: ValueKey<_RecordStatsMode>(_mode),
+              child: _mode == _RecordStatsMode.study
+                  ? const _RecordsBody()
+                  : const _LifeRecordsBody(),
+            ),
+          ),
         ),
       ],
     );

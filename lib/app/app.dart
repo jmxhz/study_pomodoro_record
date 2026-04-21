@@ -55,6 +55,7 @@ class HomeShell extends StatefulWidget {
 class _HomeShellState extends State<HomeShell> {
   int _currentIndex = 0;
   static const double _kSwipeVelocityThreshold = 350;
+  int _moduleDirection = 1;
 
   static const _titles = ['新增记录', '总记录', '积分奖励'];
   static const _pages = [
@@ -68,6 +69,7 @@ class _HomeShellState extends State<HomeShell> {
       return;
     }
     setState(() {
+      _moduleDirection = index > _currentIndex ? 1 : -1;
       _currentIndex = index;
     });
   }
@@ -77,11 +79,26 @@ class _HomeShellState extends State<HomeShell> {
     if (velocity.abs() < _kSwipeVelocityThreshold) {
       return;
     }
-    if (velocity < 0) {
-      _switchToIndex(_currentIndex + 1);
+    final isForward = velocity > 0;
+    if (_trySwitchRecordMode(isForward)) {
       return;
     }
-    _switchToIndex(_currentIndex - 1);
+    _switchToIndex(isForward ? _currentIndex + 1 : _currentIndex - 1);
+  }
+
+  bool _trySwitchRecordMode(bool isForward) {
+    if (_currentIndex != 0 && _currentIndex != 1) {
+      return false;
+    }
+    if (isForward && RecordSharedModeMemory.mode == RecordSharedMode.study) {
+      RecordSharedModeMemory.setMode(RecordSharedMode.life);
+      return true;
+    }
+    if (!isForward && RecordSharedModeMemory.mode == RecordSharedMode.life) {
+      RecordSharedModeMemory.setMode(RecordSharedMode.study);
+      return true;
+    }
+    return false;
   }
 
   @override
@@ -106,7 +123,29 @@ class _HomeShellState extends State<HomeShell> {
       body: GestureDetector(
         behavior: HitTestBehavior.translucent,
         onHorizontalDragEnd: _handleHorizontalDragEnd,
-        child: _pages[_currentIndex],
+        child: AnimatedSwitcher(
+          duration: const Duration(milliseconds: 240),
+          switchInCurve: Curves.easeOutCubic,
+          switchOutCurve: Curves.easeOutCubic,
+          transitionBuilder: (child, animation) {
+            final begin = Offset(_moduleDirection * 0.18, 0);
+            final offsetAnimation = Tween<Offset>(
+              begin: begin,
+              end: Offset.zero,
+            ).animate(animation);
+            return SlideTransition(
+              position: offsetAnimation,
+              child: FadeTransition(
+                opacity: animation,
+                child: child,
+              ),
+            );
+          },
+          child: KeyedSubtree(
+            key: ValueKey<int>(_currentIndex),
+            child: _pages[_currentIndex],
+          ),
+        ),
       ),
       bottomNavigationBar: NavigationBar(
         selectedIndex: _currentIndex,
