@@ -79,7 +79,7 @@ class _HomeShellState extends State<HomeShell> {
     if (velocity.abs() < _kSwipeVelocityThreshold) {
       return;
     }
-    final isForward = velocity > 0;
+    final isForward = velocity < 0;
     if (_trySwitchRecordMode(isForward)) {
       return;
     }
@@ -124,19 +124,32 @@ class _HomeShellState extends State<HomeShell> {
         behavior: HitTestBehavior.translucent,
         onHorizontalDragEnd: _handleHorizontalDragEnd,
         child: AnimatedSwitcher(
-          duration: const Duration(milliseconds: 240),
+          duration: const Duration(milliseconds: 300),
           switchInCurve: Curves.easeOutCubic,
-          switchOutCurve: Curves.easeOutCubic,
+          switchOutCurve: Curves.easeInCubic,
+          layoutBuilder: (currentChild, previousChildren) {
+            return Stack(
+              fit: StackFit.expand,
+              children: [
+                ...previousChildren,
+                if (currentChild != null) currentChild,
+              ],
+            );
+          },
           transitionBuilder: (child, animation) {
-            final begin = Offset(_moduleDirection * 0.18, 0);
+            final isIncoming = child.key == ValueKey<int>(_currentIndex);
             final offsetAnimation = Tween<Offset>(
-              begin: begin,
-              end: Offset.zero,
+              begin: isIncoming ? Offset(_moduleDirection * 0.22, 0) : Offset.zero,
+              end: isIncoming ? Offset.zero : Offset(-_moduleDirection * 0.12, 0),
+            ).animate(animation);
+            final opacityAnimation = Tween<double>(
+              begin: isIncoming ? 0.0 : 1.0,
+              end: isIncoming ? 1.0 : 0.0,
             ).animate(animation);
             return SlideTransition(
               position: offsetAnimation,
               child: FadeTransition(
-                opacity: animation,
+                opacity: opacityAnimation,
                 child: child,
               ),
             );

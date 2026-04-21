@@ -116,19 +116,32 @@ class _RecordModeBodyState extends State<_RecordModeBody> {
         ),
         Expanded(
           child: AnimatedSwitcher(
-            duration: const Duration(milliseconds: 220),
+            duration: const Duration(milliseconds: 280),
             switchInCurve: Curves.easeOutCubic,
-            switchOutCurve: Curves.easeOutCubic,
+            switchOutCurve: Curves.easeInCubic,
+            layoutBuilder: (currentChild, previousChildren) {
+              return Stack(
+                fit: StackFit.expand,
+                children: [
+                  ...previousChildren,
+                  if (currentChild != null) currentChild,
+                ],
+              );
+            },
             transitionBuilder: (child, animation) {
-              final begin = Offset(_modeDirection * 0.16, 0);
+              final isIncoming = child.key == ValueKey<_RecordMode>(_mode);
               final offsetAnimation = Tween<Offset>(
-                begin: begin,
-                end: Offset.zero,
+                begin: isIncoming ? Offset(_modeDirection * 0.18, 0) : Offset.zero,
+                end: isIncoming ? Offset.zero : Offset(-_modeDirection * 0.1, 0),
+              ).animate(animation);
+              final opacityAnimation = Tween<double>(
+                begin: isIncoming ? 0.0 : 1.0,
+                end: isIncoming ? 1.0 : 0.0,
               ).animate(animation);
               return SlideTransition(
                 position: offsetAnimation,
                 child: FadeTransition(
-                  opacity: animation,
+                  opacity: opacityAnimation,
                   child: child,
                 ),
               );
