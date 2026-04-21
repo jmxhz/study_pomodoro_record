@@ -54,6 +54,7 @@ class HomeShell extends StatefulWidget {
 
 class _HomeShellState extends State<HomeShell> {
   int _currentIndex = 0;
+  static const double _kSwipeVelocityThreshold = 350;
 
   static const _titles = ['新增记录', '总记录', '积分奖励'];
   static const _pages = [
@@ -61,6 +62,27 @@ class _HomeShellState extends State<HomeShell> {
     RecordsPage(),
     RewardsCenterPage(),
   ];
+
+  void _switchToIndex(int index) {
+    if (index < 0 || index >= _pages.length || index == _currentIndex) {
+      return;
+    }
+    setState(() {
+      _currentIndex = index;
+    });
+  }
+
+  void _handleHorizontalDragEnd(DragEndDetails details) {
+    final velocity = details.primaryVelocity ?? 0;
+    if (velocity.abs() < _kSwipeVelocityThreshold) {
+      return;
+    }
+    if (velocity < 0) {
+      _switchToIndex(_currentIndex + 1);
+      return;
+    }
+    _switchToIndex(_currentIndex - 1);
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -81,13 +103,15 @@ class _HomeShellState extends State<HomeShell> {
           ),
         ],
       ),
-      body: _pages[_currentIndex],
+      body: GestureDetector(
+        behavior: HitTestBehavior.translucent,
+        onHorizontalDragEnd: _handleHorizontalDragEnd,
+        child: _pages[_currentIndex],
+      ),
       bottomNavigationBar: NavigationBar(
         selectedIndex: _currentIndex,
         onDestinationSelected: (index) {
-          setState(() {
-            _currentIndex = index;
-          });
+          _switchToIndex(index);
         },
         destinations: const [
           NavigationDestination(
