@@ -79,7 +79,7 @@ class _HomeShellState extends State<HomeShell> {
     if (velocity.abs() < _kSwipeVelocityThreshold) {
       return;
     }
-    final isForward = velocity < 0;
+    final isForward = velocity > 0;
     if (_trySwitchRecordMode(isForward)) {
       return;
     }
@@ -123,40 +123,53 @@ class _HomeShellState extends State<HomeShell> {
       body: GestureDetector(
         behavior: HitTestBehavior.translucent,
         onHorizontalDragEnd: _handleHorizontalDragEnd,
-        child: AnimatedSwitcher(
-          duration: const Duration(milliseconds: 300),
-          switchInCurve: Curves.easeOutCubic,
-          switchOutCurve: Curves.easeInCubic,
-          layoutBuilder: (currentChild, previousChildren) {
-            return Stack(
-              fit: StackFit.expand,
-              children: [
-                ...previousChildren,
-                if (currentChild != null) currentChild,
-              ],
-            );
-          },
-          transitionBuilder: (child, animation) {
-            final isIncoming = child.key == ValueKey<int>(_currentIndex);
-            final offsetAnimation = Tween<Offset>(
-              begin: isIncoming ? Offset(_moduleDirection * 0.22, 0) : Offset.zero,
-              end: isIncoming ? Offset.zero : Offset(-_moduleDirection * 0.12, 0),
-            ).animate(animation);
-            final opacityAnimation = Tween<double>(
-              begin: isIncoming ? 0.0 : 1.0,
-              end: isIncoming ? 1.0 : 0.0,
-            ).animate(animation);
-            return SlideTransition(
-              position: offsetAnimation,
-              child: FadeTransition(
-                opacity: opacityAnimation,
+        child: ClipRect(
+          child: AnimatedSwitcher(
+            duration: const Duration(milliseconds: 340),
+            switchInCurve: Curves.easeOutCubic,
+            switchOutCurve: Curves.easeInCubic,
+            layoutBuilder: (currentChild, previousChildren) {
+              return Stack(
+                fit: StackFit.expand,
+                children: [
+                  ...previousChildren,
+                  if (currentChild != null) currentChild,
+                ],
+              );
+            },
+            transitionBuilder: (child, animation) {
+              final isIncoming = child.key == ValueKey<int>(_currentIndex);
+              final offsetAnimation = (isIncoming
+                      ? TweenSequence<Offset>([
+                          TweenSequenceItem(
+                            tween: Tween<Offset>(
+                              begin: Offset(_moduleDirection * 0.24, 0),
+                              end: Offset(-_moduleDirection * 0.02, 0),
+                            ).chain(CurveTween(curve: Curves.easeOutCubic)),
+                            weight: 82,
+                          ),
+                          TweenSequenceItem(
+                            tween: Tween<Offset>(
+                              begin: Offset(-_moduleDirection * 0.02, 0),
+                              end: Offset.zero,
+                            ).chain(CurveTween(curve: Curves.easeOut)),
+                            weight: 18,
+                          ),
+                        ])
+                      : Tween<Offset>(
+                          begin: Offset.zero,
+                          end: Offset(-_moduleDirection * 0.14, 0),
+                        ).chain(CurveTween(curve: Curves.easeInCubic)))
+                  .animate(animation);
+              return SlideTransition(
+                position: offsetAnimation,
                 child: child,
-              ),
-            );
-          },
-          child: KeyedSubtree(
-            key: ValueKey<int>(_currentIndex),
-            child: _pages[_currentIndex],
+              );
+            },
+            child: KeyedSubtree(
+              key: ValueKey<int>(_currentIndex),
+              child: _pages[_currentIndex],
+            ),
           ),
         ),
       ),

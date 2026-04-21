@@ -115,42 +115,55 @@ class _RecordModeBodyState extends State<_RecordModeBody> {
           ),
         ),
         Expanded(
-          child: AnimatedSwitcher(
-            duration: const Duration(milliseconds: 280),
-            switchInCurve: Curves.easeOutCubic,
-            switchOutCurve: Curves.easeInCubic,
-            layoutBuilder: (currentChild, previousChildren) {
-              return Stack(
-                fit: StackFit.expand,
-                children: [
-                  ...previousChildren,
-                  if (currentChild != null) currentChild,
-                ],
-              );
-            },
-            transitionBuilder: (child, animation) {
-              final isIncoming = child.key == ValueKey<_RecordMode>(_mode);
-              final offsetAnimation = Tween<Offset>(
-                begin: isIncoming ? Offset(_modeDirection * 0.18, 0) : Offset.zero,
-                end: isIncoming ? Offset.zero : Offset(-_modeDirection * 0.1, 0),
-              ).animate(animation);
-              final opacityAnimation = Tween<double>(
-                begin: isIncoming ? 0.0 : 1.0,
-                end: isIncoming ? 1.0 : 0.0,
-              ).animate(animation);
-              return SlideTransition(
-                position: offsetAnimation,
-                child: FadeTransition(
-                  opacity: opacityAnimation,
+          child: ClipRect(
+            child: AnimatedSwitcher(
+              duration: const Duration(milliseconds: 300),
+              switchInCurve: Curves.easeOutCubic,
+              switchOutCurve: Curves.easeInCubic,
+              layoutBuilder: (currentChild, previousChildren) {
+                return Stack(
+                  fit: StackFit.expand,
+                  children: [
+                    ...previousChildren,
+                    if (currentChild != null) currentChild,
+                  ],
+                );
+              },
+              transitionBuilder: (child, animation) {
+                final isIncoming = child.key == ValueKey<_RecordMode>(_mode);
+                final offsetAnimation = (isIncoming
+                        ? TweenSequence<Offset>([
+                            TweenSequenceItem(
+                              tween: Tween<Offset>(
+                                begin: Offset(_modeDirection * 0.2, 0),
+                                end: Offset(-_modeDirection * 0.015, 0),
+                              ).chain(CurveTween(curve: Curves.easeOutCubic)),
+                              weight: 84,
+                            ),
+                            TweenSequenceItem(
+                              tween: Tween<Offset>(
+                                begin: Offset(-_modeDirection * 0.015, 0),
+                                end: Offset.zero,
+                              ).chain(CurveTween(curve: Curves.easeOut)),
+                              weight: 16,
+                            ),
+                          ])
+                        : Tween<Offset>(
+                            begin: Offset.zero,
+                            end: Offset(-_modeDirection * 0.12, 0),
+                          ).chain(CurveTween(curve: Curves.easeInCubic)))
+                    .animate(animation);
+                return SlideTransition(
+                  position: offsetAnimation,
                   child: child,
-                ),
-              );
-            },
-            child: KeyedSubtree(
-              key: ValueKey<_RecordMode>(_mode),
-              child: _mode == _RecordMode.study
-                  ? const _StudyRecordFormHost(embedded: false)
-                  : const _LifeRecordFormHost(),
+                );
+              },
+              child: KeyedSubtree(
+                key: ValueKey<_RecordMode>(_mode),
+                child: _mode == _RecordMode.study
+                    ? const _StudyRecordFormHost(embedded: false)
+                    : const _LifeRecordFormHost(),
+              ),
             ),
           ),
         ),
