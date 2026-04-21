@@ -79,7 +79,7 @@ class _HomeShellState extends State<HomeShell> {
     if (velocity.abs() < _kSwipeVelocityThreshold) {
       return;
     }
-    final isForward = velocity > 0;
+    final isForward = velocity < 0;
     if (_trySwitchRecordMode(isForward)) {
       return;
     }
@@ -124,52 +124,21 @@ class _HomeShellState extends State<HomeShell> {
         behavior: HitTestBehavior.translucent,
         onHorizontalDragEnd: _handleHorizontalDragEnd,
         child: ClipRect(
-          child: AnimatedSwitcher(
-            duration: const Duration(milliseconds: 340),
-            switchInCurve: Curves.easeOutCubic,
-            switchOutCurve: Curves.easeInCubic,
-            layoutBuilder: (currentChild, previousChildren) {
-              return Stack(
-                fit: StackFit.expand,
-                children: [
-                  ...previousChildren,
-                  if (currentChild != null) currentChild,
-                ],
-              );
-            },
-            transitionBuilder: (child, animation) {
-              final isIncoming = child.key == ValueKey<int>(_currentIndex);
-              final offsetAnimation = (isIncoming
-                      ? TweenSequence<Offset>([
-                          TweenSequenceItem(
-                            tween: Tween<Offset>(
-                              begin: Offset(_moduleDirection * 0.24, 0),
-                              end: Offset(-_moduleDirection * 0.02, 0),
-                            ).chain(CurveTween(curve: Curves.easeOutCubic)),
-                            weight: 82,
-                          ),
-                          TweenSequenceItem(
-                            tween: Tween<Offset>(
-                              begin: Offset(-_moduleDirection * 0.02, 0),
-                              end: Offset.zero,
-                            ).chain(CurveTween(curve: Curves.easeOut)),
-                            weight: 18,
-                          ),
-                        ])
-                      : Tween<Offset>(
-                          begin: Offset.zero,
-                          end: Offset(-_moduleDirection * 0.14, 0),
-                        ).chain(CurveTween(curve: Curves.easeInCubic)))
-                  .animate(animation);
-              return SlideTransition(
-                position: offsetAnimation,
+          child: TweenAnimationBuilder<Offset>(
+            key: ValueKey<int>(_currentIndex),
+            tween: Tween<Offset>(
+              begin: Offset(_moduleDirection * 0.16, 0),
+              end: Offset.zero,
+            ),
+            duration: const Duration(milliseconds: 320),
+            curve: Curves.easeOutBack,
+            child: _pages[_currentIndex],
+            builder: (context, offset, child) {
+              return FractionalTranslation(
+                translation: offset,
                 child: child,
               );
             },
-            child: KeyedSubtree(
-              key: ValueKey<int>(_currentIndex),
-              child: _pages[_currentIndex],
-            ),
           ),
         ),
       ),

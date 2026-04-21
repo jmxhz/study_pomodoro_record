@@ -119,54 +119,23 @@ class _RecordsModeBodyState extends State<_RecordsModeBody> {
         ),
         Expanded(
           child: ClipRect(
-            child: AnimatedSwitcher(
+            child: TweenAnimationBuilder<Offset>(
+              key: ValueKey<_RecordStatsMode>(_mode),
+              tween: Tween<Offset>(
+                begin: Offset(_modeDirection * 0.14, 0),
+                end: Offset.zero,
+              ),
               duration: const Duration(milliseconds: 300),
-              switchInCurve: Curves.easeOutCubic,
-              switchOutCurve: Curves.easeInCubic,
-              layoutBuilder: (currentChild, previousChildren) {
-                return Stack(
-                  fit: StackFit.expand,
-                  children: [
-                    ...previousChildren,
-                    if (currentChild != null) currentChild,
-                  ],
-                );
-              },
-              transitionBuilder: (child, animation) {
-                final isIncoming = child.key == ValueKey<_RecordStatsMode>(_mode);
-                final offsetAnimation = (isIncoming
-                        ? TweenSequence<Offset>([
-                            TweenSequenceItem(
-                              tween: Tween<Offset>(
-                                begin: Offset(_modeDirection * 0.2, 0),
-                                end: Offset(-_modeDirection * 0.015, 0),
-                              ).chain(CurveTween(curve: Curves.easeOutCubic)),
-                              weight: 84,
-                            ),
-                            TweenSequenceItem(
-                              tween: Tween<Offset>(
-                                begin: Offset(-_modeDirection * 0.015, 0),
-                                end: Offset.zero,
-                              ).chain(CurveTween(curve: Curves.easeOut)),
-                              weight: 16,
-                            ),
-                          ])
-                        : Tween<Offset>(
-                            begin: Offset.zero,
-                            end: Offset(-_modeDirection * 0.12, 0),
-                          ).chain(CurveTween(curve: Curves.easeInCubic)))
-                    .animate(animation);
-                return SlideTransition(
-                  position: offsetAnimation,
+              curve: Curves.easeOutBack,
+              child: _mode == _RecordStatsMode.study
+                  ? const _RecordsBody()
+                  : const _LifeRecordsBody(),
+              builder: (context, offset, child) {
+                return FractionalTranslation(
+                  translation: offset,
                   child: child,
                 );
               },
-              child: KeyedSubtree(
-                key: ValueKey<_RecordStatsMode>(_mode),
-                child: _mode == _RecordStatsMode.study
-                    ? const _RecordsBody()
-                    : const _LifeRecordsBody(),
-              ),
             ),
           ),
         ),
