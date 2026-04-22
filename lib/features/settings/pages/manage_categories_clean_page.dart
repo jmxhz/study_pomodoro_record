@@ -44,6 +44,14 @@ class ManageCategoriesCleanPage extends StatelessWidget {
                               trailing: Wrap(
                                 spacing: 4,
                                 children: [
+                                  Switch(
+                                    value: item.isEnabled,
+                                    onChanged: controller.isBusy
+                                        ? null
+                                        : (value) => controller.updateCategory(
+                                            item.copyWith(isEnabled: value),
+                                          ),
+                                  ),
                                   IconButton(
                                     tooltip: '编辑',
                                     onPressed: () => _editCategory(context, controller, item),
@@ -82,7 +90,7 @@ class ManageCategoriesCleanPage extends StatelessWidget {
     if (result == null) {
       return;
     }
-    await controller.addCategory(name: result.name, isEnabled: result.isEnabled);
+    await controller.addCategory(name: result.name, isEnabled: true);
   }
 
   Future<void> _editCategory(
@@ -103,7 +111,7 @@ class ManageCategoriesCleanPage extends StatelessWidget {
       return;
     }
     await controller.updateCategory(
-      item.copyWith(name: result.name, isEnabled: result.isEnabled),
+      item.copyWith(name: result.name, isEnabled: item.isEnabled),
     );
   }
 

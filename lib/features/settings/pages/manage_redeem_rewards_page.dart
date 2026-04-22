@@ -47,6 +47,14 @@ class ManageRedeemRewardsPage extends StatelessWidget {
                               trailing: Wrap(
                                 spacing: 4,
                                 children: [
+                                  Switch(
+                                    value: item.isEnabled,
+                                    onChanged: controller.isBusy
+                                        ? null
+                                        : (value) => controller.updateRedeemReward(
+                                            item.copyWith(isEnabled: value),
+                                          ),
+                                  ),
                                   IconButton(
                                     tooltip: '编辑',
                                     onPressed: () => _editItem(context, controller, item),
@@ -83,7 +91,7 @@ class ManageRedeemRewardsPage extends StatelessWidget {
       name: result.name,
       costPoints: result.costPoints,
       note: result.note,
-      isEnabled: result.isEnabled,
+      isEnabled: true,
     );
   }
 
@@ -110,7 +118,7 @@ class ManageRedeemRewardsPage extends StatelessWidget {
         costPoints: result.costPoints,
         note: result.note,
         clearNote: result.note == null,
-        isEnabled: result.isEnabled,
+        isEnabled: item.isEnabled,
       ),
     );
   }

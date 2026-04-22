@@ -44,6 +44,14 @@ class ManageFeedbackPage extends StatelessWidget {
                               trailing: Wrap(
                                 spacing: 4,
                                 children: [
+                                  Switch(
+                                    value: item.isEnabled,
+                                    onChanged: controller.isBusy
+                                        ? null
+                                        : (value) => controller.updateReward(
+                                            item.copyWith(isEnabled: value),
+                                          ),
+                                  ),
                                   IconButton(
                                     tooltip: '编辑',
                                     onPressed: () => _editFeedback(context, controller, item),
@@ -82,7 +90,7 @@ class ManageFeedbackPage extends StatelessWidget {
     if (result == null) {
       return;
     }
-    await controller.addReward(name: result.name, isEnabled: result.isEnabled);
+    await controller.addReward(name: result.name, isEnabled: true);
   }
 
   Future<void> _editFeedback(
@@ -103,7 +111,7 @@ class ManageFeedbackPage extends StatelessWidget {
       return;
     }
     await controller.updateReward(
-      item.copyWith(name: result.name, isEnabled: result.isEnabled),
+      item.copyWith(name: result.name, isEnabled: item.isEnabled),
     );
   }
 

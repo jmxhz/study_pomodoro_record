@@ -47,6 +47,14 @@ class ManageImprovementOptionsPage extends StatelessWidget {
                               trailing: Wrap(
                                 spacing: 4,
                                 children: [
+                                  Switch(
+                                    value: item.isEnabled,
+                                    onChanged: controller.isBusy
+                                        ? null
+                                        : (value) => controller.updateImprovementOption(
+                                            item.copyWith(isEnabled: value),
+                                          ),
+                                  ),
                                   IconButton(
                                     tooltip: '编辑',
                                     onPressed: () => _editItem(context, controller, item),
@@ -82,7 +90,7 @@ class ManageImprovementOptionsPage extends StatelessWidget {
     await controller.addImprovementOption(
       name: result.name,
       categoryId: result.categoryId,
-      isEnabled: result.isEnabled,
+      isEnabled: true,
     );
   }
 
@@ -108,7 +116,7 @@ class ManageImprovementOptionsPage extends StatelessWidget {
         name: result.name,
         categoryId: result.categoryId,
         clearCategoryId: result.categoryId == null,
-        isEnabled: result.isEnabled,
+        isEnabled: item.isEnabled,
       ),
     );
   }

@@ -53,6 +53,14 @@ class ManageContentsCleanPage extends StatelessWidget {
                               trailing: Wrap(
                                 spacing: 4,
                                 children: [
+                                  Switch(
+                                    value: item.isEnabled,
+                                    onChanged: controller.isBusy
+                                        ? null
+                                        : (value) => controller.updateContent(
+                                            item.copyWith(isEnabled: value),
+                                          ),
+                                  ),
                                   IconButton(
                                     tooltip: '编辑',
                                     onPressed: () => _editContent(context, controller, item),
@@ -103,7 +111,7 @@ class ManageContentsCleanPage extends StatelessWidget {
     await controller.addContent(
       name: result.name,
       categoryId: result.categoryId,
-      isEnabled: result.isEnabled,
+      isEnabled: true,
       defaultPoints: result.defaultPoints,
       allowAdjust: result.allowAdjust,
       minPoints: result.minPoints,
@@ -137,7 +145,7 @@ class ManageContentsCleanPage extends StatelessWidget {
         name: result.name,
         categoryId: result.categoryId,
         clearCategoryId: result.categoryId == null,
-        isEnabled: result.isEnabled,
+        isEnabled: item.isEnabled,
         defaultPoints: result.defaultPoints,
         allowAdjust: result.allowAdjust,
         minPoints: result.minPoints,
