@@ -1,4 +1,4 @@
-﻿import 'package:flutter/material.dart';
+import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
 import '../../../data/models/redeem_reward.dart';
@@ -18,7 +18,9 @@ class ManageRedeemRewardsPage extends StatelessWidget {
             actions: [
               IconButton(
                 tooltip: '新增奖励兑换项',
-                onPressed: controller.isBusy ? null : () => _addItem(context, controller),
+                onPressed: controller.isBusy
+                    ? null
+                    : () => _addItem(context, controller),
                 icon: const Icon(Icons.add),
               ),
             ],
@@ -35,9 +37,10 @@ class ManageRedeemRewardsPage extends StatelessWidget {
                         onReorder: controller.reorderRedeemRewards,
                         itemBuilder: (context, index) {
                           final item = controller.redeemRewards[index];
-                          final noteText = item.note == null || item.note!.isEmpty
-                              ? ''
-                              : ' · ${item.note}';
+                          final noteText =
+                              item.note == null || item.note!.isEmpty
+                                  ? ''
+                                  : ' · ${item.note}';
                           return Card(
                             key: ValueKey(item.id ?? item.name),
                             child: ListTile(
@@ -49,14 +52,25 @@ class ManageRedeemRewardsPage extends StatelessWidget {
                               trailing: Wrap(
                                 spacing: 4,
                                 children: [
+                                  Switch(
+                                    value: item.isEnabled,
+                                    onChanged: controller.isBusy
+                                        ? null
+                                        : (value) =>
+                                            controller.updateRedeemReward(
+                                              item.copyWith(isEnabled: value),
+                                            ),
+                                  ),
                                   IconButton(
                                     tooltip: '编辑',
-                                    onPressed: () => _editItem(context, controller, item),
+                                    onPressed: () =>
+                                        _editItem(context, controller, item),
                                     icon: const Icon(Icons.edit_outlined),
                                   ),
                                   IconButton(
                                     tooltip: '删除',
-                                    onPressed: () => _deleteItem(context, controller, item),
+                                    onPressed: () =>
+                                        _deleteItem(context, controller, item),
                                     icon: const Icon(Icons.delete_outline),
                                   ),
                                 ],
@@ -73,7 +87,8 @@ class ManageRedeemRewardsPage extends StatelessWidget {
     );
   }
 
-  Future<void> _addItem(BuildContext context, SettingsController controller) async {
+  Future<void> _addItem(
+      BuildContext context, SettingsController controller) async {
     final result = await showDialog<RedeemRewardDialogResult>(
       context: context,
       builder: (context) => const RedeemRewardDialog(),
@@ -85,7 +100,7 @@ class ManageRedeemRewardsPage extends StatelessWidget {
       name: result.name,
       costPoints: result.costPoints,
       note: result.note,
-      isEnabled: result.isEnabled,
+      isEnabled: true,
     );
   }
 
@@ -100,7 +115,6 @@ class ManageRedeemRewardsPage extends StatelessWidget {
         initialName: item.name,
         initialCostPoints: item.costPoints,
         initialNote: item.note,
-        initialEnabled: item.isEnabled,
       ),
     );
     if (result == null) {
@@ -112,7 +126,7 @@ class ManageRedeemRewardsPage extends StatelessWidget {
         costPoints: result.costPoints,
         note: result.note,
         clearNote: result.note == null,
-        isEnabled: result.isEnabled,
+        isEnabled: item.isEnabled,
       ),
     );
   }

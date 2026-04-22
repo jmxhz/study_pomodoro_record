@@ -41,7 +41,8 @@ class ManageImprovementOptionsHubPage extends StatelessWidget {
                               MaterialPageRoute<void>(
                                 builder: (_) => ChangeNotifierProvider.value(
                                   value: controller,
-                                  child: _ImprovementSectionPage(section: section),
+                                  child:
+                                      _ImprovementSectionPage(section: section),
                                 ),
                               ),
                             );
@@ -73,11 +74,12 @@ class ManageImprovementOptionsHubPage extends StatelessWidget {
     ];
 
     final legacyGroups = <int?, List<ImprovementOption>>{};
-    for (final item
-        in controller.improvementOptions.where(
-          (item) => item.contentOptionId == null && item.categoryId != null,
-        )) {
-      legacyGroups.putIfAbsent(item.categoryId, () => <ImprovementOption>[]).add(item);
+    for (final item in controller.improvementOptions.where(
+      (item) => item.contentOptionId == null && item.categoryId != null,
+    )) {
+      legacyGroups
+          .putIfAbsent(item.categoryId, () => <ImprovementOption>[])
+          .add(item);
     }
 
     for (final entry in legacyGroups.entries) {
@@ -112,7 +114,8 @@ class _ImprovementSectionPage extends StatelessWidget {
                 )
                 .toList(growable: false)
             : controller.improvementOptions
-                .where((item) => item.contentOptionId == section.contentOptionId)
+                .where(
+                    (item) => item.contentOptionId == section.contentOptionId)
                 .toList(growable: false);
 
         return Scaffold(
@@ -121,7 +124,9 @@ class _ImprovementSectionPage extends StatelessWidget {
             actions: [
               IconButton(
                 tooltip: '新增改进措施',
-                onPressed: controller.isBusy ? null : () => _addItem(context, controller),
+                onPressed: controller.isBusy
+                    ? null
+                    : () => _addItem(context, controller),
                 icon: const Icon(Icons.add),
               ),
             ],
@@ -137,7 +142,8 @@ class _ImprovementSectionPage extends StatelessWidget {
                         itemCount: items.length,
                         onReorder: (oldIndex, newIndex) {
                           if (section.isLegacy) {
-                            controller.reorderImprovementOptionsInLegacyCategory(
+                            controller
+                                .reorderImprovementOptionsInLegacyCategory(
                               section.legacyCategoryId,
                               oldIndex,
                               newIndex,
@@ -153,7 +159,8 @@ class _ImprovementSectionPage extends StatelessWidget {
                         itemBuilder: (context, index) {
                           final item = items[index];
                           return Card(
-                            key: ValueKey('improvement-${section.title}-${item.id ?? item.name}'),
+                            key: ValueKey(
+                                'improvement-${section.title}-${item.id ?? item.name}'),
                             child: ListTile(
                               leading: const Icon(Icons.drag_indicator),
                               title: Text(item.name),
@@ -161,14 +168,25 @@ class _ImprovementSectionPage extends StatelessWidget {
                               trailing: Wrap(
                                 spacing: 4,
                                 children: [
+                                  Switch(
+                                    value: item.isEnabled,
+                                    onChanged: controller.isBusy
+                                        ? null
+                                        : (value) =>
+                                            controller.updateImprovementOption(
+                                              item.copyWith(isEnabled: value),
+                                            ),
+                                  ),
                                   IconButton(
                                     tooltip: '编辑',
-                                    onPressed: () => _editItem(context, controller, item),
+                                    onPressed: () =>
+                                        _editItem(context, controller, item),
                                     icon: const Icon(Icons.edit_outlined),
                                   ),
                                   IconButton(
                                     tooltip: '删除',
-                                    onPressed: () => _deleteItem(context, controller, item),
+                                    onPressed: () =>
+                                        _deleteItem(context, controller, item),
                                     icon: const Icon(Icons.delete_outline),
                                   ),
                                 ],
@@ -185,7 +203,8 @@ class _ImprovementSectionPage extends StatelessWidget {
     );
   }
 
-  Future<void> _addItem(BuildContext context, SettingsController controller) async {
+  Future<void> _addItem(
+      BuildContext context, SettingsController controller) async {
     final result = await showDialog<ContentBoundOptionDialogResult>(
       context: context,
       builder: (context) => ContentBoundOptionDialog(
@@ -201,7 +220,7 @@ class _ImprovementSectionPage extends StatelessWidget {
     await controller.addImprovementOption(
       name: result.name,
       contentOptionId: result.contentOptionId,
-      isEnabled: result.isEnabled,
+      isEnabled: true,
     );
   }
 
@@ -218,7 +237,6 @@ class _ImprovementSectionPage extends StatelessWidget {
         contentOptions: controller.contentOptions,
         initialName: item.name,
         initialContentOptionId: item.contentOptionId,
-        initialEnabled: item.isEnabled,
       ),
     );
     if (result == null) {
@@ -231,7 +249,7 @@ class _ImprovementSectionPage extends StatelessWidget {
         clearCategoryId: result.contentOptionId != null,
         contentOptionId: result.contentOptionId,
         clearContentOptionId: result.contentOptionId == null,
-        isEnabled: result.isEnabled,
+        isEnabled: item.isEnabled,
       ),
     );
   }

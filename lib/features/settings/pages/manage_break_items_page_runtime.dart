@@ -1,4 +1,4 @@
-﻿import 'package:flutter/material.dart';
+import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
 import '../../../data/models/reward_option.dart';
@@ -23,14 +23,17 @@ class ManageBreakItemsPage extends StatelessWidget {
   Widget build(BuildContext context) {
     return Consumer<SettingsController>(
       builder: (context, controller, child) {
-        final items = isLong ? controller.longBreakOptions : controller.shortBreakOptions;
+        final items =
+            isLong ? controller.longBreakOptions : controller.shortBreakOptions;
         return Scaffold(
           appBar: AppBar(
             title: Text(pageTitle),
             actions: [
               IconButton(
                 tooltip: '新增$itemLabel',
-                onPressed: controller.isBusy ? null : () => _addItem(context, controller),
+                onPressed: controller.isBusy
+                    ? null
+                    : () => _addItem(context, controller),
                 icon: const Icon(Icons.add),
               ),
             ],
@@ -45,12 +48,14 @@ class ManageBreakItemsPage extends StatelessWidget {
                         padding: const EdgeInsets.all(16),
                         itemCount: items.length,
                         onReorder: (oldIndex, newIndex) {
-                          controller.reorderBreaksByType(type, oldIndex, newIndex);
+                          controller.reorderBreaksByType(
+                              type, oldIndex, newIndex);
                         },
                         itemBuilder: (context, index) {
                           final item = items[index];
                           return Card(
-                            key: ValueKey('${item.type}-${item.id ?? item.name}'),
+                            key: ValueKey(
+                                '${item.type}-${item.id ?? item.name}'),
                             child: ListTile(
                               leading: const Icon(Icons.drag_indicator),
                               title: Text(item.name),
@@ -58,14 +63,24 @@ class ManageBreakItemsPage extends StatelessWidget {
                               trailing: Wrap(
                                 spacing: 4,
                                 children: [
+                                  Switch(
+                                    value: item.isEnabled,
+                                    onChanged: controller.isBusy
+                                        ? null
+                                        : (value) => controller.updateReward(
+                                              item.copyWith(isEnabled: value),
+                                            ),
+                                  ),
                                   IconButton(
                                     tooltip: '编辑',
-                                    onPressed: () => _editItem(context, controller, item),
+                                    onPressed: () =>
+                                        _editItem(context, controller, item),
                                     icon: const Icon(Icons.edit_outlined),
                                   ),
                                   IconButton(
                                     tooltip: '删除',
-                                    onPressed: () => _deleteItem(context, controller, item),
+                                    onPressed: () =>
+                                        _deleteItem(context, controller, item),
                                     icon: const Icon(Icons.delete_outline),
                                   ),
                                 ],
@@ -82,7 +97,8 @@ class ManageBreakItemsPage extends StatelessWidget {
     );
   }
 
-  Future<void> _addItem(BuildContext context, SettingsController controller) async {
+  Future<void> _addItem(
+      BuildContext context, SettingsController controller) async {
     final result = await showDialog<SimpleOptionDialogResult>(
       context: context,
       builder: (context) => SimpleOptionDialog(
@@ -96,7 +112,7 @@ class ManageBreakItemsPage extends StatelessWidget {
     await controller.addReward(
       name: result.name,
       type: type,
-      isEnabled: result.isEnabled,
+      isEnabled: true,
     );
   }
 
@@ -111,14 +127,13 @@ class ManageBreakItemsPage extends StatelessWidget {
         title: '编辑$itemLabel',
         nameLabel: '$itemLabel名称',
         initialName: item.name,
-        initialEnabled: item.isEnabled,
       ),
     );
     if (result == null) {
       return;
     }
     await controller.updateReward(
-      item.copyWith(name: result.name, isEnabled: result.isEnabled),
+      item.copyWith(name: result.name, isEnabled: item.isEnabled),
     );
   }
 

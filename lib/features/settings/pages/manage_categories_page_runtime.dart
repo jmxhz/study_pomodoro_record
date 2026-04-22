@@ -1,4 +1,4 @@
-﻿import 'package:flutter/material.dart';
+import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
 import '../../../data/models/category_option.dart';
@@ -18,7 +18,9 @@ class ManageCategoriesPage extends StatelessWidget {
             actions: [
               IconButton(
                 tooltip: '新增分类',
-                onPressed: controller.isBusy ? null : () => _addCategory(context, controller),
+                onPressed: controller.isBusy
+                    ? null
+                    : () => _addCategory(context, controller),
                 icon: const Icon(Icons.add),
               ),
             ],
@@ -44,14 +46,24 @@ class ManageCategoriesPage extends StatelessWidget {
                               trailing: Wrap(
                                 spacing: 4,
                                 children: [
+                                  Switch(
+                                    value: item.isEnabled,
+                                    onChanged: controller.isBusy
+                                        ? null
+                                        : (value) => controller.updateCategory(
+                                              item.copyWith(isEnabled: value),
+                                            ),
+                                  ),
                                   IconButton(
                                     tooltip: '编辑',
-                                    onPressed: () => _editCategory(context, controller, item),
+                                    onPressed: () => _editCategory(
+                                        context, controller, item),
                                     icon: const Icon(Icons.edit_outlined),
                                   ),
                                   IconButton(
                                     tooltip: '删除',
-                                    onPressed: () => _deleteCategory(context, controller, item),
+                                    onPressed: () => _deleteCategory(
+                                        context, controller, item),
                                     icon: const Icon(Icons.delete_outline),
                                   ),
                                 ],
@@ -82,7 +94,7 @@ class ManageCategoriesPage extends StatelessWidget {
     if (result == null) {
       return;
     }
-    await controller.addCategory(name: result.name, isEnabled: result.isEnabled);
+    await controller.addCategory(name: result.name, isEnabled: true);
   }
 
   Future<void> _editCategory(
@@ -96,14 +108,13 @@ class ManageCategoriesPage extends StatelessWidget {
         title: '编辑分类',
         nameLabel: '分类名称',
         initialName: item.name,
-        initialEnabled: item.isEnabled,
       ),
     );
     if (result == null) {
       return;
     }
     await controller.updateCategory(
-      item.copyWith(name: result.name, isEnabled: result.isEnabled),
+      item.copyWith(name: result.name, isEnabled: item.isEnabled),
     );
   }
 

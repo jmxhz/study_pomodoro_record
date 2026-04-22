@@ -83,13 +83,11 @@ class SimpleOptionDialog extends StatefulWidget {
 
 class _SimpleOptionDialogState extends State<SimpleOptionDialog> {
   late final TextEditingController _nameController;
-  late bool _isEnabled;
 
   @override
   void initState() {
     super.initState();
     _nameController = TextEditingController(text: widget.initialName);
-    _isEnabled = widget.initialEnabled;
   }
 
   @override
@@ -110,17 +108,6 @@ class _SimpleOptionDialogState extends State<SimpleOptionDialog> {
             autofocus: true,
             decoration: InputDecoration(labelText: widget.nameLabel),
           ),
-          const SizedBox(height: 12),
-          SwitchListTile(
-            contentPadding: EdgeInsets.zero,
-            title: const Text('启用'),
-            value: _isEnabled,
-            onChanged: (value) {
-              setState(() {
-                _isEnabled = value;
-              });
-            },
-          ),
         ],
       ),
       actions: [
@@ -137,7 +124,7 @@ class _SimpleOptionDialogState extends State<SimpleOptionDialog> {
             Navigator.of(context).pop(
               SimpleOptionDialogResult(
                 name: name,
-                isEnabled: _isEnabled,
+                isEnabled: true,
               ),
             );
           },
@@ -288,14 +275,12 @@ class ContentBoundOptionDialog extends StatefulWidget {
 
 class _ContentBoundOptionDialogState extends State<ContentBoundOptionDialog> {
   late final TextEditingController _nameController;
-  late bool _isEnabled;
   int? _contentOptionId;
 
   @override
   void initState() {
     super.initState();
     _nameController = TextEditingController(text: widget.initialName);
-    _isEnabled = widget.initialEnabled;
     _contentOptionId = widget.initialContentOptionId;
   }
 
@@ -339,17 +324,6 @@ class _ContentBoundOptionDialogState extends State<ContentBoundOptionDialog> {
               });
             },
           ),
-          const SizedBox(height: 12),
-          SwitchListTile(
-            contentPadding: EdgeInsets.zero,
-            title: const Text('启用'),
-            value: _isEnabled,
-            onChanged: (value) {
-              setState(() {
-                _isEnabled = value;
-              });
-            },
-          ),
         ],
       ),
       actions: [
@@ -367,7 +341,7 @@ class _ContentBoundOptionDialogState extends State<ContentBoundOptionDialog> {
               ContentBoundOptionDialogResult(
                 name: name,
                 contentOptionId: _contentOptionId,
-                isEnabled: _isEnabled,
+                isEnabled: true,
               ),
             );
           },
@@ -511,7 +485,6 @@ class _RedeemRewardDialogState extends State<RedeemRewardDialog> {
   late final TextEditingController _nameController;
   late final TextEditingController _costPointsController;
   late final TextEditingController _noteController;
-  late bool _isEnabled;
 
   @override
   void initState() {
@@ -521,7 +494,6 @@ class _RedeemRewardDialogState extends State<RedeemRewardDialog> {
       text: widget.initialCostPoints.toString(),
     );
     _noteController = TextEditingController(text: widget.initialNote ?? '');
-    _isEnabled = widget.initialEnabled;
   }
 
   @override
@@ -558,17 +530,6 @@ class _RedeemRewardDialogState extends State<RedeemRewardDialog> {
               maxLines: 4,
               decoration: const InputDecoration(labelText: '备注'),
             ),
-            const SizedBox(height: 12),
-            SwitchListTile(
-              contentPadding: EdgeInsets.zero,
-              title: const Text('启用'),
-              value: _isEnabled,
-              onChanged: (value) {
-                setState(() {
-                  _isEnabled = value;
-                });
-              },
-            ),
           ],
         ),
       ),
@@ -590,7 +551,7 @@ class _RedeemRewardDialogState extends State<RedeemRewardDialog> {
                 name: name,
                 costPoints: costPoints,
                 note: note.isEmpty ? null : note,
-                isEnabled: _isEnabled,
+                isEnabled: true,
               ),
             );
           },
