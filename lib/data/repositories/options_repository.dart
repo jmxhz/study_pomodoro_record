@@ -91,6 +91,36 @@ class OptionsRepository {
     return int.tryParse(maps.first['setting_value'] as String? ?? '') ?? 90;
   }
 
+  Future<int> getLifeDailyTargetPoints() async {
+    final db = await _database.database;
+    final maps = await db.query(
+      'app_settings',
+      columns: ['setting_value'],
+      where: 'setting_key = ?',
+      whereArgs: ['life_daily_target_points'],
+      limit: 1,
+    );
+    if (maps.isEmpty) {
+      return 10;
+    }
+    return int.tryParse(maps.first['setting_value'] as String? ?? '') ?? 10;
+  }
+
+  Future<int> getLifeDailyTargetBonusPoints() async {
+    final db = await _database.database;
+    final maps = await db.query(
+      'app_settings',
+      columns: ['setting_value'],
+      where: 'setting_key = ?',
+      whereArgs: ['life_daily_target_bonus_points'],
+      limit: 1,
+    );
+    if (maps.isEmpty) {
+      return 5;
+    }
+    return int.tryParse(maps.first['setting_value'] as String? ?? '') ?? 5;
+  }
+
   Future<String> getThemePalette() async {
     final db = await _database.database;
     final maps = await db.query(
@@ -183,8 +213,14 @@ class OptionsRepository {
     final maps = await db.query(
       'app_settings',
       columns: ['setting_key', 'setting_value'],
-      where: 'setting_key IN (?, ?, ?)',
-      whereArgs: ['long_break_every', 'theme_palette', 'session_gap_minutes'],
+      where: 'setting_key IN (?, ?, ?, ?, ?)',
+      whereArgs: [
+        'long_break_every',
+        'theme_palette',
+        'session_gap_minutes',
+        'life_daily_target_points',
+        'life_daily_target_bonus_points',
+      ],
     );
     return {
       for (final item in maps)
@@ -231,6 +267,32 @@ class OptionsRepository {
       'app_settings',
       {
         'setting_key': 'session_gap_minutes',
+        'setting_value': '$value',
+        'updated_at': DateTime.now().toIso8601String(),
+      },
+      conflictAlgorithm: ConflictAlgorithm.replace,
+    );
+  }
+
+  Future<void> setLifeDailyTargetPoints(int value) async {
+    final db = await _database.database;
+    await db.insert(
+      'app_settings',
+      {
+        'setting_key': 'life_daily_target_points',
+        'setting_value': '$value',
+        'updated_at': DateTime.now().toIso8601String(),
+      },
+      conflictAlgorithm: ConflictAlgorithm.replace,
+    );
+  }
+
+  Future<void> setLifeDailyTargetBonusPoints(int value) async {
+    final db = await _database.database;
+    await db.insert(
+      'app_settings',
+      {
+        'setting_key': 'life_daily_target_bonus_points',
         'setting_value': '$value',
         'updated_at': DateTime.now().toIso8601String(),
       },

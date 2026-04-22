@@ -34,6 +34,9 @@ class ManageContentsPage extends StatelessWidget {
                   controller: controller,
                   onEdit: (item) => _editContent(context, controller, item),
                   onDelete: (item) => _deleteContent(context, controller, item),
+                  onToggleEnabled: (item, value) => controller.updateContent(
+                    item.copyWith(isEnabled: value),
+                  ),
                 ),
               ),
             ],
@@ -56,7 +59,7 @@ class ManageContentsPage extends StatelessWidget {
     await controller.addContent(
       name: result.name,
       categoryId: result.categoryId,
-      isEnabled: result.isEnabled,
+      isEnabled: true,
       points: result.points,
     );
   }
@@ -72,7 +75,6 @@ class ManageContentsPage extends StatelessWidget {
         categories: controller.categories,
         initialName: item.name,
         initialCategoryId: item.categoryId,
-        initialEnabled: item.isEnabled,
         initialPoints: item.points,
       ),
     );
@@ -84,7 +86,6 @@ class ManageContentsPage extends StatelessWidget {
         name: result.name,
         categoryId: result.categoryId,
         clearCategoryId: result.categoryId == null,
-        isEnabled: result.isEnabled,
         points: result.points,
         defaultPoints: result.points,
         allowAdjust: false,
@@ -127,11 +128,13 @@ class _ContentList extends StatelessWidget {
     required this.controller,
     required this.onEdit,
     required this.onDelete,
+    required this.onToggleEnabled,
   });
 
   final SettingsController controller;
   final ValueChanged<ContentOption> onEdit;
   final ValueChanged<ContentOption> onDelete;
+  final void Function(ContentOption item, bool value) onToggleEnabled;
 
   @override
   Widget build(BuildContext context) {
@@ -146,7 +149,7 @@ class _ContentList extends StatelessWidget {
       itemBuilder: (context, index) {
         if (index == 0) {
           return Text(
-            '已按绑定分类分组显示，组内可拖动调整顺序。',
+            '默认收起；每个分组内固定按积分从小到大排列。',
             style: Theme.of(context).textTheme.bodyMedium,
           );
         }
@@ -157,70 +160,44 @@ class _ContentList extends StatelessWidget {
         return Padding(
           padding: const EdgeInsets.only(bottom: 16),
           child: Card(
-            child: Padding(
-              padding: const EdgeInsets.fromLTRB(16, 16, 16, 8),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Row(
-                    children: [
-                      Expanded(
-                        child: Text(
-                          section.title,
-                          style: Theme.of(context).textTheme.titleMedium,
+            child: Theme(
+              data:
+                  Theme.of(context).copyWith(dividerColor: Colors.transparent),
+              child: ExpansionTile(
+                initiallyExpanded: false,
+                title: Text(section.title),
+                subtitle: Text('${section.items.length} 项'),
+                childrenPadding: const EdgeInsets.fromLTRB(8, 0, 8, 8),
+                children: section.items.map((item) {
+                  return ListTile(
+                    title: Text(item.name),
+                    subtitle: Text(
+                      '${StudyTypeUtils.describeForContent(contentName: item.name, categoryName: controller.categoryNameOf(item.categoryId), fallbackPoints: item.points).shortLabel} · 积分 ${item.points}',
+                    ),
+                    trailing: Wrap(
+                      spacing: 2,
+                      crossAxisAlignment: WrapCrossAlignment.center,
+                      children: [
+                        Switch(
+                          value: item.isEnabled,
+                          onChanged: controller.isBusy
+                              ? null
+                              : (value) => onToggleEnabled(item, value),
                         ),
-                      ),
-                      Text('${section.items.length} 项'),
-                    ],
-                  ),
-                  const SizedBox(height: 8),
-                  ReorderableListView.builder(
-                    shrinkWrap: true,
-                    physics: const NeverScrollableScrollPhysics(),
-                    itemCount: section.items.length,
-                    onReorder: (oldIndex, newIndex) {
-                      controller.reorderContentsInCategory(
-                          section.categoryId, oldIndex, newIndex);
-                    },
-                    itemBuilder: (context, index) {
-                      final item = section.items[index];
-                      return Container(
-                        key: ValueKey(
-                            'content-${section.categoryId ?? 'all'}-${item.id ?? item.name}'),
-                        decoration: BoxDecoration(
-                          border: Border(
-                            top: index == 0
-                                ? BorderSide.none
-                                : BorderSide(
-                                    color: Theme.of(context).dividerColor),
-                          ),
+                        IconButton(
+                          tooltip: '编辑',
+                          onPressed: () => onEdit(item),
+                          icon: const Icon(Icons.edit_outlined),
                         ),
-                        child: ListTile(
-                          leading: const Icon(Icons.drag_indicator),
-                          title: Text(item.name),
-                          subtitle: Text(
-                            '${item.isEnabled ? '已启用' : '已停用'} · ${StudyTypeUtils.describeForContent(contentName: item.name, categoryName: controller.categoryNameOf(item.categoryId), fallbackPoints: item.points).shortLabel} · 积分 ${item.points}',
-                          ),
-                          trailing: Wrap(
-                            spacing: 4,
-                            children: [
-                              IconButton(
-                                tooltip: '编辑',
-                                onPressed: () => onEdit(item),
-                                icon: const Icon(Icons.edit_outlined),
-                              ),
-                              IconButton(
-                                tooltip: '删除',
-                                onPressed: () => onDelete(item),
-                                icon: const Icon(Icons.delete_outline),
-                              ),
-                            ],
-                          ),
+                        IconButton(
+                          tooltip: '删除',
+                          onPressed: () => onDelete(item),
+                          icon: const Icon(Icons.delete_outline),
                         ),
-                      );
-                    },
-                  ),
-                ],
+                      ],
+                    ),
+                  );
+                }).toList(growable: false),
               ),
             ),
           ),
@@ -249,18 +226,23 @@ class _ContentList extends StatelessWidget {
       if (groups.containsKey(null)) null,
     ];
 
-    return orderedIds
-        .where((categoryId) => groups.containsKey(categoryId))
-        .map(
-          (categoryId) => _ContentSection(
-            categoryId: categoryId,
-            title: categoryId == null
-                ? '默认'
-                : controller.categoryNameOf(categoryId),
-            items: groups[categoryId]!,
-          ),
-        )
-        .toList(growable: false);
+    return orderedIds.where((categoryId) => groups.containsKey(categoryId)).map(
+      (categoryId) {
+        final sorted = [...groups[categoryId]!]..sort((a, b) {
+            final pointsCompare = a.points.compareTo(b.points);
+            if (pointsCompare != 0) {
+              return pointsCompare;
+            }
+            return a.name.compareTo(b.name);
+          });
+        return _ContentSection(
+          categoryId: categoryId,
+          title:
+              categoryId == null ? '默认' : controller.categoryNameOf(categoryId),
+          items: sorted,
+        );
+      },
+    ).toList(growable: false);
   }
 }
 

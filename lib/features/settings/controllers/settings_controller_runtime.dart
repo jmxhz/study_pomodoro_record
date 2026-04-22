@@ -38,6 +38,8 @@ class SettingsController extends ChangeNotifier {
   List<LifeOption> lifeOptions = const [];
   int longBreakEvery = 4;
   int sessionGapMinutes = 90;
+  int lifeDailyTargetPoints = 10;
+  int lifeDailyTargetBonusPoints = 5;
   String? backupDirectoryPath;
   String? lastTransferDirectoryPath;
 
@@ -57,6 +59,8 @@ class SettingsController extends ChangeNotifier {
         optionsRepository.getLifeOptions(),
         optionsRepository.getLongBreakEvery(),
         optionsRepository.getSessionGapMinutes(),
+        optionsRepository.getLifeDailyTargetPoints(),
+        optionsRepository.getLifeDailyTargetBonusPoints(),
         optionsRepository.getBackupDirectoryPath(),
         optionsRepository.getLastTransferDirectoryPath(),
       ]);
@@ -70,8 +74,10 @@ class SettingsController extends ChangeNotifier {
       lifeOptions = results[7] as List<LifeOption>;
       longBreakEvery = results[8] as int;
       sessionGapMinutes = results[9] as int;
-      backupDirectoryPath = results[10] as String?;
-      lastTransferDirectoryPath = results[11] as String?;
+      lifeDailyTargetPoints = results[10] as int;
+      lifeDailyTargetBonusPoints = results[11] as int;
+      backupDirectoryPath = results[12] as String?;
+      lastTransferDirectoryPath = results[13] as String?;
     } catch (error) {
       errorMessage = error.toString();
     } finally {
@@ -318,6 +324,22 @@ class SettingsController extends ChangeNotifier {
     await _runBusyAction(() async {
       await optionsRepository.setSessionGapMinutes(value);
       sessionGapMinutes = value;
+      dataSyncNotifier.notifyChanged();
+    });
+  }
+
+  Future<void> setLifeDailyTargetPointsValue(int value) async {
+    await _runBusyAction(() async {
+      await optionsRepository.setLifeDailyTargetPoints(value);
+      lifeDailyTargetPoints = value;
+      dataSyncNotifier.notifyChanged();
+    });
+  }
+
+  Future<void> setLifeDailyTargetBonusPointsValue(int value) async {
+    await _runBusyAction(() async {
+      await optionsRepository.setLifeDailyTargetBonusPoints(value);
+      lifeDailyTargetBonusPoints = value;
       dataSyncNotifier.notifyChanged();
     });
   }

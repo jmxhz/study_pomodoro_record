@@ -98,7 +98,9 @@ class _RecordModeBodyState extends State<_RecordModeBody> {
       _modeDirection = value == _RecordMode.life ? 1 : -1;
       _mode = value;
       RecordSharedModeMemory.setMode(
-        value == _RecordMode.life ? RecordSharedMode.life : RecordSharedMode.study,
+        value == _RecordMode.life
+            ? RecordSharedMode.life
+            : RecordSharedMode.study,
       );
     });
   }
@@ -648,40 +650,33 @@ class _LifeRecordFormBody extends StatelessWidget {
                     FutureBuilder<_LifeHabitSnapshot>(
                       future: _LifePointsSummarySection.loadSnapshot(
                         context: context,
-                        selectedHabitKey:
-                            _LifePointsSummarySection._resolveHabitKeyStatic(
-                                controller.selectedOption?.name),
+                        selectedOptionId: controller.selectedOption?.id,
+                        selectedOptionName: controller.selectedOption?.name,
                         selectedOptionPoints: controller.selectedOption?.points,
                         occurredAt: controller.occurredAt,
                       ),
                       builder: (context, snapshot) {
                         final selectedOption = controller.selectedOption;
-                        final completedKeys =
-                            snapshot.data?.completedHabitKeys ??
+                        final completedOptionIds =
+                            snapshot.data?.completedOptionIds ?? const <int>{};
+                        final completedOptionNames =
+                            snapshot.data?.completedOptionNames ??
                                 const <String>{};
-                        final selectedKey =
-                            _LifePointsSummarySection._resolveHabitKeyStatic(
-                                selectedOption?.name);
-                        final selectedBlocked = selectedKey != null &&
-                            _LifePointsSummarySection.singleRecordHabitKeys
-                                .contains(selectedKey) &&
-                            completedKeys.contains(selectedKey);
+                        final selectedBlocked = selectedOption != null &&
+                            ((selectedOption.id != null &&
+                                    completedOptionIds
+                                        .contains(selectedOption.id)) ||
+                                completedOptionNames
+                                    .contains(selectedOption.name));
                         if (selectedBlocked) {
-                          final fallback = controller.lifeOptions
-                              .where((option) {
-                                final key =
-                                    _LifePointsSummarySection._resolveHabitKeyStatic(
-                                        option.name);
-                                if (key == null) {
-                                  return true;
-                                }
-                                final isSingle = _LifePointsSummarySection
-                                    .singleRecordHabitKeys
-                                    .contains(key);
-                                final isDone = completedKeys.contains(key);
-                                return !(isSingle && isDone);
-                              })
-                              .firstOrNull;
+                          final fallback =
+                              controller.lifeOptions.where((option) {
+                            final byId = option.id != null &&
+                                completedOptionIds.contains(option.id);
+                            final byName =
+                                completedOptionNames.contains(option.name);
+                            return !(byId || byName);
+                          }).firstOrNull;
                           if (fallback != null) {
                             WidgetsBinding.instance.addPostFrameCallback((_) {
                               if (!context.mounted) {
@@ -693,8 +688,10 @@ class _LifeRecordFormBody extends StatelessWidget {
                         }
                         return _LifeHabitGroups(
                           options: controller.lifeOptions,
-                          selectedOption: selectedBlocked ? null : selectedOption,
-                          completedHabitKeys: completedKeys,
+                          selectedOption:
+                              selectedBlocked ? null : selectedOption,
+                          completedOptionIds: completedOptionIds,
+                          completedOptionNames: completedOptionNames,
                           onSelect: controller.selectLifeOption,
                         );
                       },
@@ -709,6 +706,8 @@ class _LifeRecordFormBody extends StatelessWidget {
               selectedHabitKey:
                   _LifePointsSummarySection._resolveHabitKeyStatic(
                       controller.selectedOption?.name),
+              selectedOptionId: controller.selectedOption?.id,
+              selectedOptionName: controller.selectedOption?.name,
               selectedOptionPoints: controller.selectedOption?.points,
               occurredAt: controller.occurredAt,
             ),
@@ -837,20 +836,6 @@ class _LifeRecordFormBody extends StatelessWidget {
     LifeRecordEntryController controller,
   ) async {
     try {
-      final selectedKey = _LifePointsSummarySection._resolveHabitKeyStatic(
-          controller.selectedOption?.name);
-      final snapshot = await _LifePointsSummarySection.loadSnapshot(
-        context: context,
-        selectedHabitKey: selectedKey,
-        selectedOptionPoints: controller.selectedOption?.points,
-        occurredAt: controller.occurredAt,
-      );
-      if (selectedKey != null &&
-          _LifePointsSummarySection.singleRecordHabitKeys
-              .contains(selectedKey) &&
-          snapshot.completedHabitKeys.contains(selectedKey)) {
-        throw StateError('该生活习惯今天已记录，不能重复记录。');
-      }
       await controller.save();
       if (!context.mounted) {
         return;
@@ -869,20 +854,21 @@ class _LifeRecordFormBody extends StatelessWidget {
       );
     }
   }
-
 }
 
 class _LifeHabitGroups extends StatelessWidget {
   const _LifeHabitGroups({
     required this.options,
     required this.selectedOption,
-    required this.completedHabitKeys,
+    required this.completedOptionIds,
+    required this.completedOptionNames,
     required this.onSelect,
   });
 
   final List<LifeOption> options;
   final LifeOption? selectedOption;
-  final Set<String> completedHabitKeys;
+  final Set<int> completedOptionIds;
+  final Set<String> completedOptionNames;
   final ValueChanged<LifeOption> onSelect;
 
   @override
@@ -929,14 +915,10 @@ class _LifeHabitGroups extends StatelessWidget {
                 spacing: 8,
                 runSpacing: 8,
                 children: items.map((option) {
-                  final key =
-                      _LifePointsSummarySection._resolveHabitKeyStatic(option.name);
-                  final isSingle = key != null &&
-                      _LifePointsSummarySection.singleRecordHabitKeys
-                          .contains(key);
-                  final isCompletedToday =
-                      key != null && completedHabitKeys.contains(key);
-                  final canSelect = !(isSingle && isCompletedToday);
+                  final byId = option.id != null &&
+                      completedOptionIds.contains(option.id);
+                  final byName = completedOptionNames.contains(option.name);
+                  final canSelect = !(byId || byName);
                   final selected = selectedOption?.id == option.id &&
                       selectedOption?.name == option.name;
                   return Opacity(
@@ -996,31 +978,26 @@ class _LifePointsSummarySection extends StatelessWidget {
   const _LifePointsSummarySection({
     required this.habits,
     required this.selectedHabitKey,
+    required this.selectedOptionId,
+    required this.selectedOptionName,
     required this.selectedOptionPoints,
     required this.occurredAt,
   });
 
   final List<_LifeHabitItem> habits;
   final String? selectedHabitKey;
+  final int? selectedOptionId;
+  final String? selectedOptionName;
   final int? selectedOptionPoints;
   final DateTime occurredAt;
-  static const Set<String> singleRecordHabitKeys = {
-    'neck_shoulder_relax',
-    'light_exercise',
-    'morning_no_bed_phone',
-    'night_no_video_or_game_binge',
-    'wake_up_leave_bed',
-    'home_wash_immediately',
-    'in_bed_before_22',
-    'sleep_before_23_and_no_phone_after_2230',
-  };
 
   @override
   Widget build(BuildContext context) {
     return FutureBuilder<_LifeHabitSnapshot>(
       future: loadSnapshot(
         context: context,
-        selectedHabitKey: selectedHabitKey,
+        selectedOptionId: selectedOptionId,
+        selectedOptionName: selectedOptionName,
         selectedOptionPoints: selectedOptionPoints,
         occurredAt: occurredAt,
       ),
@@ -1029,19 +1006,27 @@ class _LifePointsSummarySection extends StatelessWidget {
         final data = snapshot.data ??
             _LifeHabitSnapshot(
               currentPoints: 0,
-              currentEarnedPoints: selectedHabitKey == null ? 0 : selectedPoints,
+              currentEarnedPoints:
+                  selectedHabitKey == null ? 0 : selectedPoints,
               completedHabitKeys: const <String>{},
+              completedOptionIds: const <int>{},
+              completedOptionNames: const <String>{},
+              targetPoints: 10,
+              bonusPoints: 5,
             );
-        final rate = ((data.currentPoints / 10) * 100).round();
-        final reached = data.currentPoints >= 10;
-        final gap = reached ? 0 : (10 - data.currentPoints);
-        final extra = reached ? (data.currentPoints - 10) : 0;
+        final targetPoints = data.targetPoints;
+        final rate = ((data.currentPoints / targetPoints) * 100).round();
+        final reached = data.currentPoints >= targetPoints;
+        final gap = reached ? 0 : (targetPoints - data.currentPoints);
+        final extra = reached ? (data.currentPoints - targetPoints) : 0;
         final theme = Theme.of(context);
         final feedback = _feedbackText(
           earnedPoints: data.currentEarnedPoints,
+          targetPoints: targetPoints,
         );
         final reward = _rewardText(
           todayPoints: data.currentPoints,
+          targetPoints: targetPoints,
         );
         final suggestions = _missingSuggestions(data.completedHabitKeys);
 
@@ -1132,7 +1117,8 @@ class _LifePointsSummarySection extends StatelessWidget {
 
   static Future<_LifeHabitSnapshot> loadSnapshot({
     required BuildContext context,
-    required String? selectedHabitKey,
+    required int? selectedOptionId,
+    required String? selectedOptionName,
     required int? selectedOptionPoints,
     required DateTime occurredAt,
   }) async {
@@ -1144,30 +1130,45 @@ class _LifePointsSummarySection extends StatelessWidget {
       dayStart,
       dayEnd,
     );
+    final targetPoints =
+        await services.optionsRepository.getLifeDailyTargetPoints();
+    final bonusPoints =
+        await services.optionsRepository.getLifeDailyTargetBonusPoints();
     final completed = <String>{};
+    final completedOptionIds = <int>{};
+    final completedOptionNames = <String>{};
     var todayPoints = 0;
     for (final record in records) {
       todayPoints += record.points;
+      if (record.lifeOptionId != null) {
+        completedOptionIds.add(record.lifeOptionId!);
+      }
+      completedOptionNames.add(record.contentNameSnapshot);
       final key = _resolveHabitKeyStatic(record.contentNameSnapshot);
       if (key != null) {
         completed.add(key);
       }
     }
-    final selectedAlreadyDone = selectedHabitKey != null &&
-        singleRecordHabitKeys.contains(selectedHabitKey) &&
-        completed.contains(selectedHabitKey);
+    final selectedAlreadyDone = (selectedOptionId != null &&
+            completedOptionIds.contains(selectedOptionId)) ||
+        (selectedOptionName != null &&
+            completedOptionNames.contains(selectedOptionName));
     final selectedBaseEarned =
         selectedAlreadyDone ? 0 : (selectedOptionPoints ?? 0);
     var thresholdBonus = 0;
     if (selectedBaseEarned > 0 &&
-        todayPoints < 10 &&
-        (todayPoints + selectedBaseEarned) >= 10) {
-      thresholdBonus = 5;
+        todayPoints < targetPoints &&
+        (todayPoints + selectedBaseEarned) >= targetPoints) {
+      thresholdBonus = bonusPoints;
     }
     return _LifeHabitSnapshot(
       currentPoints: todayPoints,
       currentEarnedPoints: selectedBaseEarned + thresholdBonus,
       completedHabitKeys: completed,
+      completedOptionIds: completedOptionIds,
+      completedOptionNames: completedOptionNames,
+      targetPoints: targetPoints,
+      bonusPoints: bonusPoints,
     );
   }
 
@@ -1234,6 +1235,7 @@ class _LifePointsSummarySection extends StatelessWidget {
 
   String _feedbackText({
     required int earnedPoints,
+    required int targetPoints,
   }) {
     if (earnedPoints <= 0) {
       return '请选择一个生活记录项后查看本次反馈。';
@@ -1256,7 +1258,7 @@ class _LifePointsSummarySection extends StatelessWidget {
     if (earnedPoints <= 9) {
       return '今天距离达标很近，说明大部分生活动作已经完成。最后差的不是能力，而是一个关键动作的启动。';
     }
-    if (earnedPoints == 10) {
+    if (earnedPoints == targetPoints) {
       return '今天生活习惯已达标。你完成的不是简单打卡，而是在减少刷视频、熬夜和身体紧张带来的连锁消耗。';
     }
     return '今天生活习惯超额完成。你不仅守住了关键边界，还额外完成了身体维护或节奏优化。';
@@ -1264,6 +1266,7 @@ class _LifePointsSummarySection extends StatelessWidget {
 
   String _rewardText({
     required int todayPoints,
+    required int targetPoints,
   }) {
     if (todayPoints <= 0) {
       return '你保住了今天的最低行动线，避免了完全放弃。';
@@ -1283,7 +1286,7 @@ class _LifePointsSummarySection extends StatelessWidget {
     if (todayPoints <= 9) {
       return '你减少了一部分无意识消耗，今晚会比完全失控更容易恢复。';
     }
-    if (todayPoints == 10) {
+    if (todayPoints == targetPoints) {
       return '今天可以给自己一个低刺激奖励，比如听音乐、泡脚、轻松拉伸，但不要用短视频或游戏作为奖励。';
     }
     return '今天的节奏非常完整。保持这种低消耗状态，比临时兴奋更能支持长期学习。';
@@ -1311,11 +1314,19 @@ class _LifeHabitSnapshot {
     required this.currentPoints,
     required this.currentEarnedPoints,
     required this.completedHabitKeys,
+    required this.completedOptionIds,
+    required this.completedOptionNames,
+    required this.targetPoints,
+    required this.bonusPoints,
   });
 
   final int currentPoints;
   final int currentEarnedPoints;
   final Set<String> completedHabitKeys;
+  final Set<int> completedOptionIds;
+  final Set<String> completedOptionNames;
+  final int targetPoints;
+  final int bonusPoints;
 }
 
 class _RecordModeSwitch extends StatelessWidget {

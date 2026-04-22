@@ -102,6 +102,19 @@ class LifeRecordEntryController extends ChangeNotifier {
 
       final now = DateTime.now();
       final option = selectedOption!;
+      final dayStart =
+          DateTime(occurredAt.year, occurredAt.month, occurredAt.day);
+      final dayEnd = dayStart.add(const Duration(days: 1));
+      final sameDayRecords =
+          await studyRecordRepository.getLifeRecordsBetween(dayStart, dayEnd);
+      final alreadyRecordedToday = sameDayRecords.any((record) {
+        final sameId = option.id != null && record.lifeOptionId == option.id;
+        final sameName = record.contentNameSnapshot == option.name;
+        return sameId || sameName;
+      });
+      if (alreadyRecordedToday) {
+        throw StateError('该生活记录项今天已记录，不能重复记录。');
+      }
       final record = StudyRecord(
         recordKind: 'life',
         lifeOptionId: option.id,

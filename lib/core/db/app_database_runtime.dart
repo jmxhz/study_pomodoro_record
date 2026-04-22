@@ -472,6 +472,7 @@ class AppDatabase {
     });
     await _seedLongBreakSettingIfNeeded(db);
     await _seedSessionGapSettingIfNeeded(db);
+    await _seedLifeGoalSettingsIfNeeded(db);
     await _seedThemePaletteIfNeeded(db);
     await _seedLifeOptionsIfNeeded(db);
     await _syncLifeOptionDefaults(db);
@@ -497,6 +498,7 @@ class AppDatabase {
 
     await _seedLongBreakSettingIfNeeded(db);
     await _seedSessionGapSettingIfNeeded(db);
+    await _seedLifeGoalSettingsIfNeeded(db);
     await _seedLifeOptionsIfNeeded(db);
     await _syncLifeOptionDefaults(db);
     await _syncContentStudyTypes(db);
@@ -851,6 +853,28 @@ class AppDatabase {
       'setting_value': '90',
       'updated_at': DateTime.now().toIso8601String(),
     });
+  }
+
+  Future<void> _seedLifeGoalSettingsIfNeeded(Database db) async {
+    Future<void> upsertIfMissing(String key, String value) async {
+      final rows = await db.query(
+        'app_settings',
+        where: 'setting_key = ?',
+        whereArgs: [key],
+        limit: 1,
+      );
+      if (rows.isNotEmpty) {
+        return;
+      }
+      await db.insert('app_settings', {
+        'setting_key': key,
+        'setting_value': value,
+        'updated_at': DateTime.now().toIso8601String(),
+      });
+    }
+
+    await upsertIfMissing('life_daily_target_points', '10');
+    await upsertIfMissing('life_daily_target_bonus_points', '5');
   }
 
   Future<void> _seedThemePaletteIfNeeded(Database db) async {

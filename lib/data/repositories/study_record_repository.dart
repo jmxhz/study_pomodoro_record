@@ -53,6 +53,7 @@ class StudyRecordRepository {
 
   Future<int> totalEarnedPoints() async {
     final db = await _database.database;
+    final settings = await _getLifeRewardSettings(db);
     return Sqflite.firstIntValue(
           await db.rawQuery(
             '''
@@ -63,21 +64,50 @@ class StudyRecordRepository {
               ) +
               COALESCE(
                 (
-                  SELECT COUNT(*) * 5
+                  SELECT COUNT(*) * ?
                   FROM (
                     SELECT substr(occurred_at, 1, 10) AS life_day
                     FROM study_records
                     WHERE record_kind = 'life'
                     GROUP BY life_day
-                    HAVING COALESCE(SUM(points), 0) >= 10
+                    HAVING COALESCE(SUM(points), 0) >= ?
                   )
                 ),
                 0
               ) AS total_points
             ''',
+            [settings.bonusPoints, settings.targetPoints],
           ),
         ) ??
         0;
+  }
+
+  Future<({int targetPoints, int bonusPoints})> _getLifeRewardSettings(
+      Database db) async {
+    final rows = await db.query(
+      'app_settings',
+      columns: const ['setting_key', 'setting_value'],
+      where: 'setting_key IN (?, ?)',
+      whereArgs: const [
+        'life_daily_target_points',
+        'life_daily_target_bonus_points',
+      ],
+    );
+    var targetPoints = 10;
+    var bonusPoints = 5;
+    for (final row in rows) {
+      final key = row['setting_key'] as String? ?? '';
+      final value = int.tryParse(row['setting_value'] as String? ?? '');
+      if (value == null) {
+        continue;
+      }
+      if (key == 'life_daily_target_points' && value > 0) {
+        targetPoints = value;
+      } else if (key == 'life_daily_target_bonus_points' && value >= 0) {
+        bonusPoints = value;
+      }
+    }
+    return (targetPoints: targetPoints, bonusPoints: bonusPoints);
   }
 
   Future<List<StudyRecord>> getRecordsBetween(

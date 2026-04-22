@@ -1,4 +1,4 @@
-﻿import 'package:flutter/material.dart';
+import 'package:flutter/material.dart';
 
 import '../../../data/models/category_option.dart';
 import '../../../data/models/content_option.dart';
@@ -41,13 +41,11 @@ class ContentOptionDialogResult {
   const ContentOptionDialogResult({
     required this.name,
     required this.categoryId,
-    required this.isEnabled,
     required this.points,
   });
 
   final String name;
   final int? categoryId;
-  final bool isEnabled;
   final int points;
 }
 
@@ -169,7 +167,8 @@ class CategoryBoundOptionDialog extends StatefulWidget {
   final bool initialEnabled;
 
   @override
-  State<CategoryBoundOptionDialog> createState() => _CategoryBoundOptionDialogState();
+  State<CategoryBoundOptionDialog> createState() =>
+      _CategoryBoundOptionDialogState();
 }
 
 class _CategoryBoundOptionDialogState extends State<CategoryBoundOptionDialog> {
@@ -283,7 +282,8 @@ class ContentBoundOptionDialog extends StatefulWidget {
   final bool initialEnabled;
 
   @override
-  State<ContentBoundOptionDialog> createState() => _ContentBoundOptionDialogState();
+  State<ContentBoundOptionDialog> createState() =>
+      _ContentBoundOptionDialogState();
 }
 
 class _ContentBoundOptionDialogState extends State<ContentBoundOptionDialog> {
@@ -384,14 +384,12 @@ class ContentOptionDialog extends StatefulWidget {
     required this.categories,
     this.initialName = '',
     this.initialCategoryId,
-    this.initialEnabled = true,
     this.initialPoints = 1,
   });
 
   final List<CategoryOption> categories;
   final String initialName;
   final int? initialCategoryId;
-  final bool initialEnabled;
   final int initialPoints;
 
   @override
@@ -401,7 +399,6 @@ class ContentOptionDialog extends StatefulWidget {
 class _ContentOptionDialogState extends State<ContentOptionDialog> {
   late final TextEditingController _nameController;
   late final TextEditingController _pointsController;
-  late bool _isEnabled;
   int? _categoryId;
 
   @override
@@ -411,7 +408,6 @@ class _ContentOptionDialogState extends State<ContentOptionDialog> {
     _pointsController = TextEditingController(
       text: widget.initialPoints.toString(),
     );
-    _isEnabled = widget.initialEnabled;
     _categoryId = widget.initialCategoryId;
   }
 
@@ -463,17 +459,6 @@ class _ContentOptionDialogState extends State<ContentOptionDialog> {
               keyboardType: TextInputType.number,
               decoration: const InputDecoration(labelText: '积分'),
             ),
-            const SizedBox(height: 12),
-            SwitchListTile(
-              contentPadding: EdgeInsets.zero,
-              title: const Text('启用'),
-              value: _isEnabled,
-              onChanged: (value) {
-                setState(() {
-                  _isEnabled = value;
-                });
-              },
-            ),
           ],
         ),
       ),
@@ -493,7 +478,6 @@ class _ContentOptionDialogState extends State<ContentOptionDialog> {
               ContentOptionDialogResult(
                 name: name,
                 categoryId: _categoryId,
-                isEnabled: _isEnabled,
                 points: points,
               ),
             );
