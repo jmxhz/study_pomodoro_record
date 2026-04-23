@@ -452,51 +452,27 @@ class _LifeRecordsBody extends StatelessWidget {
               ),
             ],
             const SizedBox(height: 16),
-            Text('习惯统计', style: Theme.of(context).textTheme.titleLarge),
-            const SizedBox(height: 8),
-            if (controller.habitSummaries.isEmpty)
-              const EmptyStateCard(
-                title: '当前周期暂无生活记录',
-                subtitle: '请先在“新增记录”切换到生活模式后添加记录。',
-                icon: Icons.self_improvement_outlined,
-              )
-            else
-              ...controller.habitSummaries.map(
-                (item) => Card(
-                  child: ListTile(
-                    title: Text(item.name),
-                    subtitle: Text('${item.count} 次，${item.points} 分'),
-                  ),
-                ),
-              ),
+            _LifePointScoreSection(records: controller.details),
             const SizedBox(height: 16),
-            Text('详细记录', style: Theme.of(context).textTheme.titleLarge),
-            const SizedBox(height: 8),
-            if (controller.details.isEmpty)
-              const EmptyStateCard(
-                title: '暂无详细记录',
-                subtitle: '记录后会在这里展示生活数据。',
-                icon: Icons.list_alt_outlined,
-              )
-            else
-              ...controller.details.map(
-                (record) => Card(
-                  child: ListTile(
-                    title: Text(record.contentNameSnapshot),
-                    subtitle: Text(
-                      '${FormatUtils.formatDateTime(record.occurredAt)} · ${record.points} 分'
-                      '${record.notes?.trim().isNotEmpty == true ? '\n备注：${record.notes}' : ''}',
-                    ),
-                    isThreeLine: record.notes?.trim().isNotEmpty == true,
-                    trailing: IconButton(
-                      tooltip: '删除',
-                      icon: const Icon(Icons.delete_outline),
-                      onPressed: () =>
-                          _confirmDeleteLife(context, controller, record),
-                    ),
-                  ),
-                ),
+            _DeferredSection(
+              title: '习惯统计',
+              subtitle: controller.habitSummaries.isEmpty
+                  ? '当前周期暂无生活记录'
+                  : '当前周期 ${controller.habitSummaries.length} 项习惯',
+              icon: Icons.self_improvement_outlined,
+              child: _LifeHabitSummaryList(items: controller.habitSummaries),
+            ),
+            const SizedBox(height: 16),
+            _DeferredSection(
+              title: '详细记录',
+              subtitle: '当前周期 ${controller.details.length} 条记录',
+              icon: Icons.list_alt_outlined,
+              child: _LifeDetailList(
+                records: controller.details,
+                onDelete: (record) =>
+                    _confirmDeleteLife(context, controller, record),
               ),
+            ),
             if (controller.errorMessage != null &&
                 controller.details.isNotEmpty) ...[
               const SizedBox(height: 16),
@@ -566,6 +542,177 @@ class _LifeRecordsBody extends StatelessWidget {
         const SnackBar(content: Text('生活记录已删除')),
       );
     }
+  }
+}
+
+class _LifePointScoreSection extends StatelessWidget {
+  const _LifePointScoreSection({required this.records});
+
+  final List<StudyRecord> records;
+
+  @override
+  Widget build(BuildContext context) {
+    final scoreSummaries = List<_LifePointSummary>.generate(4, (index) {
+      final score = index + 1;
+      final count = records.where((item) => item.points == score).length;
+      return _LifePointSummary(score: score, count: count);
+    });
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text('1-4分统计', style: Theme.of(context).textTheme.titleLarge),
+        const SizedBox(height: 8),
+        if (records.isEmpty)
+          const EmptyStateCard(
+            title: '当前周期暂无生活记录',
+            subtitle: '请先在“新增记录”切换到生活模式后添加记录。',
+            icon: Icons.stacked_bar_chart_outlined,
+          )
+        else
+          ...scoreSummaries.map(
+            (item) => Card(
+              child: ListTile(
+                title: Text('${item.score} 分'),
+                subtitle: Text('${item.count} 次，${item.totalPoints} 分'),
+              ),
+            ),
+          ),
+      ],
+    );
+  }
+}
+
+class _LifePointSummary {
+  const _LifePointSummary({
+    required this.score,
+    required this.count,
+  });
+
+  final int score;
+  final int count;
+
+  int get totalPoints => score * count;
+}
+
+class _LifeHabitSummaryList extends StatelessWidget {
+  const _LifeHabitSummaryList({required this.items});
+
+  final List<LifeHabitSummary> items;
+
+  @override
+  Widget build(BuildContext context) {
+    if (items.isEmpty) {
+      return const EmptyStateCard(
+        title: '当前周期暂无生活记录',
+        subtitle: '请先在“新增记录”切换到生活模式后添加记录。',
+        icon: Icons.self_improvement_outlined,
+      );
+    }
+
+    return Column(
+      children: [
+        ...items.map(
+          (item) => Card(
+            child: ListTile(
+              title: Text(item.name),
+              subtitle: Text('${item.count} 次，${item.points} 分'),
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+}
+
+class _LifeDetailList extends StatefulWidget {
+  const _LifeDetailList({
+    required this.records,
+    required this.onDelete,
+  });
+
+  final List<StudyRecord> records;
+  final ValueChanged<StudyRecord> onDelete;
+
+  @override
+  State<_LifeDetailList> createState() => _LifeDetailListState();
+}
+
+class _LifeDetailListState extends State<_LifeDetailList> {
+  static const _pageSize = 5;
+  int _visibleCount = _pageSize;
+
+  @override
+  void didUpdateWidget(covariant _LifeDetailList oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (oldWidget.records != widget.records) {
+      _visibleCount = _pageSize;
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final records = widget.records;
+    if (records.isEmpty) {
+      return const EmptyStateCard(
+        title: '暂无详细记录',
+        subtitle: '记录后会在这里展示生活数据。',
+        icon: Icons.list_alt_outlined,
+      );
+    }
+
+    final visibleRecords = records.take(_visibleCount).toList(growable: false);
+    final remaining = records.length - visibleRecords.length;
+
+    return Column(
+      children: [
+        ...visibleRecords.map(
+          (record) => Card(
+            child: ListTile(
+              title: Text(record.contentNameSnapshot),
+              subtitle: Text(
+                '${FormatUtils.formatDateTime(record.occurredAt)} · ${record.points} 分'
+                '${record.notes?.trim().isNotEmpty == true ? '\n备注：${record.notes}' : ''}',
+              ),
+              isThreeLine: record.notes?.trim().isNotEmpty == true,
+              trailing: IconButton(
+                tooltip: '删除',
+                icon: const Icon(Icons.delete_outline),
+                onPressed: () => widget.onDelete(record),
+              ),
+            ),
+          ),
+        ),
+        if (remaining > 0) ...[
+          const SizedBox(height: 8),
+          Center(
+            child: OutlinedButton.icon(
+              onPressed: () {
+                setState(() {
+                  _visibleCount =
+                      (_visibleCount + _pageSize).clamp(0, records.length);
+                });
+              },
+              icon: const Icon(Icons.expand_more),
+              label: Text('继续查看剩余 $remaining 条'),
+            ),
+          ),
+        ],
+        if (records.length > _pageSize && _visibleCount >= records.length) ...[
+          const SizedBox(height: 8),
+          Center(
+            child: TextButton(
+              onPressed: () {
+                setState(() {
+                  _visibleCount = _pageSize;
+                });
+              },
+              child: const Text('收起详细记录'),
+            ),
+          ),
+        ],
+      ],
+    );
   }
 }
 
