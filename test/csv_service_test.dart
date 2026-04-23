@@ -188,6 +188,21 @@ bad_header,name
         ),
       );
     });
+
+    test('life 记录允许 reward_name_snapshot 为空并可导入', () {
+      final service = CsvService.forImport(importTarget: _FakeImportTarget());
+      final bundle = service.parseFiles({
+        CsvService.studyRecordsFileName: '''
+id,record_kind,life_option_id,occurred_at,category_id,category_name_snapshot,content_option_id,content_name_snapshot,reward_option_id,reward_name_snapshot,break_type,feedback_option_id,feedback_name_snapshot,pomodoro_count,points,detail_amount_text,question_count,wrong_count,output_type,weakness_tags,improvement_tags,notes,created_at,updated_at
+1,life,101,2026-04-12T10:00:00.000,"",生活,"",早起打卡,"","","","","",1,2,"","","","","[]","[]","",2026-04-12T10:00:00.000,2026-04-12T10:00:00.000
+''',
+      });
+
+      expect(bundle.studyRecords, hasLength(1));
+      expect(bundle.studyRecords.single.recordKind, 'life');
+      expect(bundle.studyRecords.single.rewardNameSnapshot, '');
+      expect(bundle.studyRecords.single.feedbackNameSnapshot, isNull);
+    });
   });
 }
 

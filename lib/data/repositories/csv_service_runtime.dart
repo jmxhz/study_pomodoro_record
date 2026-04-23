@@ -1149,10 +1149,18 @@ class CsvService {
         final hasBreakType = decoded.headers != legacyStudyRecordsHeadersV1;
         final offset = hasKind ? 2 : 0;
         final breakOffset = hasKind ? 10 : (hasBreakType ? 8 : -1);
+        final recordKind =
+            hasKind ? (_parseNullableText(row[1]) ?? 'study') : 'study';
+        final rewardName = _parseNullableText(row[7 + offset]);
+        final feedbackName = _parseNullableText(
+          row[hasBreakType ? breakOffset + 2 : 9 + offset],
+        );
+        if (rewardName == null && feedbackName == null && recordKind != 'life') {
+          throw const FormatException('字段 reward_name_snapshot 不能为空。');
+        }
         return StudyRecord(
           id: _parseNullableInt(row[0]),
-          recordKind:
-              hasKind ? (_parseNullableText(row[1]) ?? 'study') : 'study',
+          recordKind: recordKind,
           lifeOptionId: hasKind ? _parseNullableInt(row[2]) : null,
           occurredAt: _parseDateTime(row[1 + offset], 'occurred_at'),
           categoryId: _parseNullableInt(row[2 + offset]),
@@ -1162,15 +1170,12 @@ class CsvService {
           contentNameSnapshot:
               _requireText(row[5 + offset], 'content_name_snapshot'),
           rewardOptionId: _parseNullableInt(row[6 + offset]),
-          rewardNameSnapshot:
-              _requireText(row[7 + offset], 'reward_name_snapshot'),
+          rewardNameSnapshot: rewardName ?? feedbackName ?? '',
           breakType: hasBreakType ? _parseNullableText(row[breakOffset]) : null,
           feedbackOptionId: _parseNullableInt(
             row[hasBreakType ? breakOffset + 1 : 8 + offset],
           ),
-          feedbackNameSnapshot: _parseNullableText(
-            row[hasBreakType ? breakOffset + 2 : 9 + offset],
-          ),
+          feedbackNameSnapshot: feedbackName,
           pomodoroCount: _parseRequiredInt(
             row[hasBreakType ? breakOffset + 3 : 10 + offset],
             'pomodoro_count',
