@@ -767,4 +767,3 @@ extension<T> on Iterable<T> {
   T? get firstOrNull => isEmpty ? null : first;
 }
 
-const String _lifeCategoryName = '\u751f\u6d3b';
