@@ -235,14 +235,21 @@ class OptionsRepository {
     final db = await _database.database;
     await db.transaction((txn) async {
       for (final entry in values.entries) {
+        final nowIso = DateTime.now().toIso8601String();
         await txn.insert(
           'app_settings',
           {
             'setting_key': entry.key,
             'setting_value': entry.value,
-            'updated_at': DateTime.now().toIso8601String(),
+            'updated_at': nowIso,
           },
           conflictAlgorithm: ConflictAlgorithm.replace,
+        );
+        await _appendLifeGoalHistoryIfChanged(
+          txn,
+          settingKey: entry.key,
+          settingValue: entry.value,
+          effectiveAt: nowIso,
         );
       }
     });
@@ -276,27 +283,77 @@ class OptionsRepository {
 
   Future<void> setLifeDailyTargetPoints(int value) async {
     final db = await _database.database;
-    await db.insert(
-      'app_settings',
-      {
-        'setting_key': 'life_daily_target_points',
-        'setting_value': '$value',
-        'updated_at': DateTime.now().toIso8601String(),
-      },
-      conflictAlgorithm: ConflictAlgorithm.replace,
-    );
+    final nowIso = DateTime.now().toIso8601String();
+    await db.transaction((txn) async {
+      await txn.insert(
+        'app_settings',
+        {
+          'setting_key': 'life_daily_target_points',
+          'setting_value': '$value',
+          'updated_at': nowIso,
+        },
+        conflictAlgorithm: ConflictAlgorithm.replace,
+      );
+      await _appendLifeGoalHistoryIfChanged(
+        txn,
+        settingKey: 'life_daily_target_points',
+        settingValue: '$value',
+        effectiveAt: nowIso,
+      );
+    });
   }
 
   Future<void> setLifeDailyTargetBonusPoints(int value) async {
     final db = await _database.database;
-    await db.insert(
-      'app_settings',
+    final nowIso = DateTime.now().toIso8601String();
+    await db.transaction((txn) async {
+      await txn.insert(
+        'app_settings',
+        {
+          'setting_key': 'life_daily_target_bonus_points',
+          'setting_value': '$value',
+          'updated_at': nowIso,
+        },
+        conflictAlgorithm: ConflictAlgorithm.replace,
+      );
+      await _appendLifeGoalHistoryIfChanged(
+        txn,
+        settingKey: 'life_daily_target_bonus_points',
+        settingValue: '$value',
+        effectiveAt: nowIso,
+      );
+    });
+  }
+
+  Future<void> _appendLifeGoalHistoryIfChanged(
+    DatabaseExecutor executor, {
+    required String settingKey,
+    required String settingValue,
+    required String effectiveAt,
+  }) async {
+    if (settingKey != 'life_daily_target_points' &&
+        settingKey != 'life_daily_target_bonus_points') {
+      return;
+    }
+    final last = await executor.query(
+      'app_settings_history',
+      columns: const ['setting_value'],
+      where: 'setting_key = ?',
+      whereArgs: [settingKey],
+      orderBy: 'effective_at DESC, id DESC',
+      limit: 1,
+    );
+    final lastValue = last.isEmpty ? null : last.first['setting_value'] as String?;
+    if (lastValue == settingValue) {
+      return;
+    }
+    await executor.insert(
+      'app_settings_history',
       {
-        'setting_key': 'life_daily_target_bonus_points',
-        'setting_value': '$value',
-        'updated_at': DateTime.now().toIso8601String(),
+        'setting_key': settingKey,
+        'setting_value': settingValue,
+        'effective_at': effectiveAt,
       },
-      conflictAlgorithm: ConflictAlgorithm.replace,
     );
   }
 

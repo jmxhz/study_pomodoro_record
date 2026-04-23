@@ -3,7 +3,7 @@ import 'package:sqflite/sqflite.dart';
 
 class AppDatabase {
   static const _databaseName = 'study_pomodoro_record.db';
-  static const _databaseVersion = 7;
+  static const _databaseVersion = 8;
 
   Database? _database;
 
@@ -41,6 +41,9 @@ class AppDatabase {
         }
         if (oldVersion < 7) {
           await _migrateToV7(db);
+        }
+        if (oldVersion < 8) {
+          await _migrateToV8(db);
         }
       },
       onOpen: (db) async {
@@ -127,6 +130,7 @@ class AppDatabase {
 
     await _createRewardRedemptionRecordsTable(db);
     await _createAppSettingsTable(db);
+    await _createAppSettingsHistoryTable(db);
   }
 
   Future<void> _createWeaknessOptionsTable(DatabaseExecutor db) async {
@@ -209,6 +213,21 @@ class AppDatabase {
         setting_value TEXT NOT NULL,
         updated_at TEXT NOT NULL
       )
+    ''');
+  }
+
+  Future<void> _createAppSettingsHistoryTable(DatabaseExecutor db) async {
+    await db.execute('''
+      CREATE TABLE IF NOT EXISTS app_settings_history (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        setting_key TEXT NOT NULL,
+        setting_value TEXT NOT NULL,
+        effective_at TEXT NOT NULL
+      )
+    ''');
+    await db.execute('''
+      CREATE INDEX IF NOT EXISTS idx_app_settings_history_key_effective
+      ON app_settings_history(setting_key, effective_at)
     ''');
   }
 
@@ -381,6 +400,11 @@ class AppDatabase {
     await _seedLifeOptionsIfNeeded(db);
   }
 
+  Future<void> _migrateToV8(Database db) async {
+    await _createAppSettingsHistoryTable(db);
+    await _seedLifeGoalSettingsHistoryIfNeeded(db);
+  }
+
   Future<void> _seedFreshDefaultsIfNeeded(Database db) async {
     final categoryCount = await _count(db, 'categories');
     final contentCount = await _count(db, 'content_options');
@@ -473,6 +497,7 @@ class AppDatabase {
     await _seedLongBreakSettingIfNeeded(db);
     await _seedSessionGapSettingIfNeeded(db);
     await _seedLifeGoalSettingsIfNeeded(db);
+    await _seedLifeGoalSettingsHistoryIfNeeded(db);
     await _seedThemePaletteIfNeeded(db);
     await _seedLifeOptionsIfNeeded(db);
     await _syncLifeOptionDefaults(db);
@@ -499,6 +524,7 @@ class AppDatabase {
     await _seedLongBreakSettingIfNeeded(db);
     await _seedSessionGapSettingIfNeeded(db);
     await _seedLifeGoalSettingsIfNeeded(db);
+    await _seedLifeGoalSettingsHistoryIfNeeded(db);
     await _seedLifeOptionsIfNeeded(db);
     await _syncLifeOptionDefaults(db);
     await _syncContentStudyTypes(db);
@@ -875,6 +901,54 @@ class AppDatabase {
 
     await upsertIfMissing('life_daily_target_points', '10');
     await upsertIfMissing('life_daily_target_bonus_points', '5');
+  }
+
+  Future<void> _seedLifeGoalSettingsHistoryIfNeeded(Database db) async {
+    await _createAppSettingsHistoryTable(db);
+    const baselineValues = <String, String>{
+      'life_daily_target_points': '10',
+      'life_daily_target_bonus_points': '5',
+    };
+    for (final entry in baselineValues.entries) {
+      final key = entry.key;
+      final baselineValue = entry.value;
+      final existingHistory = await db.query(
+        'app_settings_history',
+        columns: const ['id'],
+        where: 'setting_key = ?',
+        whereArgs: [key],
+        limit: 1,
+      );
+      if (existingHistory.isNotEmpty) {
+        continue;
+      }
+      await db.insert('app_settings_history', {
+        'setting_key': key,
+        'setting_value': baselineValue,
+        'effective_at': '1970-01-01T00:00:00.000',
+      });
+      final currentSetting = await db.query(
+        'app_settings',
+        columns: const ['setting_value', 'updated_at'],
+        where: 'setting_key = ?',
+        whereArgs: [key],
+        limit: 1,
+      );
+      if (currentSetting.isEmpty) {
+        continue;
+      }
+      final row = currentSetting.first;
+      final currentValue = row['setting_value'] as String? ?? '';
+      if (currentValue == baselineValue) {
+        continue;
+      }
+      await db.insert('app_settings_history', {
+        'setting_key': key,
+        'setting_value': currentValue,
+        'effective_at': row['updated_at'] as String? ??
+            DateTime.now().toIso8601String(),
+      });
+    }
   }
 
   Future<void> _seedThemePaletteIfNeeded(Database db) async {

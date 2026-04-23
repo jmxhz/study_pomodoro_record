@@ -53,33 +53,39 @@ class StudyRecordRepository {
 
   Future<int> totalEarnedPoints() async {
     final db = await _database.database;
-    final settings = await _getLifeRewardSettings(db);
-    return Sqflite.firstIntValue(
+    final studyPoints = Sqflite.firstIntValue(
           await db.rawQuery(
-            '''
-            SELECT
-              COALESCE(
-                (SELECT SUM(points) FROM study_records WHERE record_kind = 'study'),
-                0
-              ) +
-              COALESCE(
-                (
-                  SELECT COUNT(*) * ?
-                  FROM (
-                    SELECT substr(occurred_at, 1, 10) AS life_day
-                    FROM study_records
-                    WHERE record_kind = 'life'
-                    GROUP BY life_day
-                    HAVING COALESCE(SUM(points), 0) >= ?
-                  )
-                ),
-                0
-              ) AS total_points
-            ''',
-            [settings.bonusPoints, settings.targetPoints],
+            "SELECT COALESCE(SUM(points), 0) FROM study_records WHERE record_kind = 'study'",
           ),
         ) ??
         0;
+
+    final lifeRows = await db.rawQuery('''
+      SELECT
+        substr(occurred_at, 1, 10) AS life_day,
+        COALESCE(SUM(points), 0) AS day_points
+      FROM study_records
+      WHERE record_kind = 'life'
+      GROUP BY life_day
+    ''');
+
+    var lifeBonusPoints = 0;
+    for (final row in lifeRows) {
+      final day = row['life_day'] as String?;
+      if (day == null || day.isEmpty) {
+        continue;
+      }
+      final dayPoints = (row['day_points'] as num?)?.toInt() ?? 0;
+      final settings = await _getLifeRewardSettingsAt(
+        db,
+        effectiveAtIso: '${day}T23:59:59.999',
+      );
+      if (dayPoints >= settings.targetPoints) {
+        lifeBonusPoints += settings.bonusPoints;
+      }
+    }
+
+    return studyPoints + lifeBonusPoints;
   }
 
   Future<({int targetPoints, int bonusPoints})> _getLifeRewardSettings(
@@ -108,6 +114,46 @@ class StudyRecordRepository {
       }
     }
     return (targetPoints: targetPoints, bonusPoints: bonusPoints);
+  }
+
+  Future<({int targetPoints, int bonusPoints})> _getLifeRewardSettingsAt(
+    Database db, {
+    required String effectiveAtIso,
+  }) async {
+    final fallback = await _getLifeRewardSettings(db);
+    final targetPoints = await _findLifeSettingValueFromHistory(
+      db,
+      settingKey: 'life_daily_target_points',
+      effectiveAtIso: effectiveAtIso,
+    );
+    final bonusPoints = await _findLifeSettingValueFromHistory(
+      db,
+      settingKey: 'life_daily_target_bonus_points',
+      effectiveAtIso: effectiveAtIso,
+    );
+    return (
+      targetPoints: targetPoints ?? fallback.targetPoints,
+      bonusPoints: bonusPoints ?? fallback.bonusPoints,
+    );
+  }
+
+  Future<int?> _findLifeSettingValueFromHistory(
+    Database db, {
+    required String settingKey,
+    required String effectiveAtIso,
+  }) async {
+    final rows = await db.query(
+      'app_settings_history',
+      columns: const ['setting_value'],
+      where: 'setting_key = ? AND effective_at <= ?',
+      whereArgs: [settingKey, effectiveAtIso],
+      orderBy: 'effective_at DESC, id DESC',
+      limit: 1,
+    );
+    if (rows.isEmpty) {
+      return null;
+    }
+    return int.tryParse(rows.first['setting_value'] as String? ?? '');
   }
 
   Future<List<StudyRecord>> getRecordsBetween(
