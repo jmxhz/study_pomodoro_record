@@ -107,10 +107,15 @@ class LifeRecordEntryController extends ChangeNotifier {
       final dayEnd = dayStart.add(const Duration(days: 1));
       final sameDayRecords =
           await studyRecordRepository.getLifeRecordsBetween(dayStart, dayEnd);
+      final selectedName = _normalizeName(option.name);
       final alreadyRecordedToday = sameDayRecords.any((record) {
-        final sameId = option.id != null && record.lifeOptionId == option.id;
-        final sameName = record.contentNameSnapshot == option.name;
-        return sameId || sameName;
+        if (option.id != null && record.lifeOptionId != null) {
+          return record.lifeOptionId == option.id;
+        }
+        if (record.lifeOptionId == null) {
+          return _normalizeName(record.contentNameSnapshot) == selectedName;
+        }
+        return false;
       });
       if (alreadyRecordedToday) {
         throw StateError('该生活记录项今天已记录，不能重复记录。');
@@ -207,6 +212,9 @@ class LifeRecordEntryController extends ChangeNotifier {
       a.day == b.day &&
       a.hour == b.hour &&
       a.minute == b.minute;
+
+  String _normalizeName(String value) =>
+      value.replaceAll(RegExp(r'\s+'), '').trim().toLowerCase();
 
   @override
   void dispose() {

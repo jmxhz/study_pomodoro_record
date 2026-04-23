@@ -666,15 +666,20 @@ class _LifeRecordFormBody extends StatelessWidget {
                             ((selectedOption.id != null &&
                                     completedOptionIds
                                         .contains(selectedOption.id)) ||
-                                completedOptionNames
-                                    .contains(selectedOption.name));
+                                (selectedOption.id == null &&
+                                    completedOptionNames.contains(
+                                      _normalizeLifeOptionName(
+                                          selectedOption.name),
+                                    )));
                         if (selectedBlocked) {
                           final fallback =
                               controller.lifeOptions.where((option) {
                             final byId = option.id != null &&
                                 completedOptionIds.contains(option.id);
-                            final byName =
-                                completedOptionNames.contains(option.name);
+                            final byName = option.id == null &&
+                                completedOptionNames.contains(
+                                  _normalizeLifeOptionName(option.name),
+                                );
                             return !(byId || byName);
                           }).firstOrNull;
                           if (fallback != null) {
@@ -917,7 +922,10 @@ class _LifeHabitGroups extends StatelessWidget {
                 children: items.map((option) {
                   final byId = option.id != null &&
                       completedOptionIds.contains(option.id);
-                  final byName = completedOptionNames.contains(option.name);
+                  final byName = option.id == null &&
+                      completedOptionNames.contains(
+                        _normalizeLifeOptionName(option.name),
+                      );
                   final canSelect = !(byId || byName);
                   final selected = selectedOption?.id == option.id &&
                       selectedOption?.name == option.name;
@@ -963,6 +971,9 @@ _LifePointTier _lifePointTier(int score) {
       );
   }
 }
+
+String _normalizeLifeOptionName(String value) =>
+    value.replaceAll(RegExp(r'\s+'), '').trim().toLowerCase();
 
 class _LifePointTier {
   const _LifePointTier({
@@ -1142,8 +1153,10 @@ class _LifePointsSummarySection extends StatelessWidget {
       todayPoints += record.points;
       if (record.lifeOptionId != null) {
         completedOptionIds.add(record.lifeOptionId!);
+      } else {
+        completedOptionNames
+            .add(_normalizeLifeOptionName(record.contentNameSnapshot));
       }
-      completedOptionNames.add(record.contentNameSnapshot);
       final key = _resolveHabitKeyStatic(record.contentNameSnapshot);
       if (key != null) {
         completed.add(key);
@@ -1151,8 +1164,10 @@ class _LifePointsSummarySection extends StatelessWidget {
     }
     final selectedAlreadyDone = (selectedOptionId != null &&
             completedOptionIds.contains(selectedOptionId)) ||
-        (selectedOptionName != null &&
-            completedOptionNames.contains(selectedOptionName));
+        (selectedOptionId == null &&
+            selectedOptionName != null &&
+            completedOptionNames
+                .contains(_normalizeLifeOptionName(selectedOptionName)));
     final selectedBaseEarned =
         selectedAlreadyDone ? 0 : (selectedOptionPoints ?? 0);
     var thresholdBonus = 0;
