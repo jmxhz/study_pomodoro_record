@@ -452,8 +452,6 @@ class _LifeRecordsBody extends StatelessWidget {
               ),
             ],
             const SizedBox(height: 16),
-            _LifePointScoreSection(records: controller.details),
-            const SizedBox(height: 16),
             _DeferredSection(
               title: '习惯统计',
               subtitle: controller.habitSummaries.isEmpty
@@ -543,56 +541,6 @@ class _LifeRecordsBody extends StatelessWidget {
       );
     }
   }
-}
-
-class _LifePointScoreSection extends StatelessWidget {
-  const _LifePointScoreSection({required this.records});
-
-  final List<StudyRecord> records;
-
-  @override
-  Widget build(BuildContext context) {
-    final scoreSummaries = List<_LifePointSummary>.generate(4, (index) {
-      final score = index + 1;
-      final count = records.where((item) => item.points == score).length;
-      return _LifePointSummary(score: score, count: count);
-    });
-
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Text('1-4分统计', style: Theme.of(context).textTheme.titleLarge),
-        const SizedBox(height: 8),
-        if (records.isEmpty)
-          const EmptyStateCard(
-            title: '当前周期暂无生活记录',
-            subtitle: '请先在“新增记录”切换到生活模式后添加记录。',
-            icon: Icons.stacked_bar_chart_outlined,
-          )
-        else
-          ...scoreSummaries.map(
-            (item) => Card(
-              child: ListTile(
-                title: Text('${item.score} 分'),
-                subtitle: Text('${item.count} 次，${item.totalPoints} 分'),
-              ),
-            ),
-          ),
-      ],
-    );
-  }
-}
-
-class _LifePointSummary {
-  const _LifePointSummary({
-    required this.score,
-    required this.count,
-  });
-
-  final int score;
-  final int count;
-
-  int get totalPoints => score * count;
 }
 
 class _LifeHabitSummaryList extends StatelessWidget {
