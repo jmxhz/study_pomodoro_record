@@ -1,4 +1,7 @@
+import 'dart:io';
+
 import 'package:flutter/foundation.dart';
+import 'package:path/path.dart' as p;
 
 import '../../../app/app_services.dart';
 import '../../../data/models/category_option.dart';
@@ -42,6 +45,23 @@ class SettingsController extends ChangeNotifier {
   int lifeDailyTargetBonusPoints = 5;
   String? backupDirectoryPath;
   String? lastTransferDirectoryPath;
+
+  String? get dataTransferDirectoryPath {
+    final backupPath = backupDirectoryPath;
+    if (backupPath == null || backupPath.trim().isEmpty) {
+      return null;
+    }
+    return p.join(p.dirname(backupPath), 'data');
+  }
+
+  Future<String> ensureDataTransferDirectory() async {
+    final directoryPath = dataTransferDirectoryPath;
+    if (directoryPath == null || directoryPath.trim().isEmpty) {
+      throw StateError('请先选择备份文件夹。');
+    }
+    await Directory(directoryPath).create(recursive: true);
+    return directoryPath;
+  }
 
   Future<void> load() async {
     try {
@@ -683,6 +703,14 @@ class SettingsController extends ChangeNotifier {
       lastTransferDirectoryPath = directoryPath;
     });
     return result;
+  }
+
+  Future<CsvExportResult> exportManualDataToBackupSibling() async {
+    final directoryPath = dataTransferDirectoryPath;
+    if (directoryPath == null || directoryPath.trim().isEmpty) {
+      throw StateError('请先选择备份文件夹。');
+    }
+    return exportManualDataToDirectory(directoryPath);
   }
 
   Future<CsvImportSummary> importCsvFiles(

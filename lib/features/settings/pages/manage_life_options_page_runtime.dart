@@ -84,6 +84,7 @@ class ManageLifeOptionsPage extends StatelessWidget {
                       ...sortedOptions.map(
                         (item) => Card(
                           child: ListTile(
+                            isThreeLine: true,
                             title: Text(item.name),
                             subtitle: Text(
                               '${item.isEnabled ? '已启用' : '已停用'} · ${item.points} 分',

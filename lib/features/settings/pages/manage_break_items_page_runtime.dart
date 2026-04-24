@@ -58,6 +58,7 @@ class ManageBreakItemsPage extends StatelessWidget {
                             key: ValueKey(
                                 '${item.type}-${item.id ?? item.name}'),
                             child: ListTile(
+                              isThreeLine: true,
                               leading: const Icon(Icons.drag_indicator),
                               title: Text(item.name),
                               subtitle: Text(item.isEnabled ? '已启用' : '已停用'),

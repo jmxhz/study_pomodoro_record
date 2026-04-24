@@ -164,9 +164,9 @@ class _SettingsBody extends StatelessWidget {
                       ),
                       const SizedBox(height: 8),
                       Text(
-                        controller.lastTransferDirectoryPath == null
-                            ? '当前未记录手动导入导出文件夹'
-                            : '手动导入导出目录：${controller.lastTransferDirectoryPath}',
+                        controller.dataTransferDirectoryPath == null
+                            ? '当前未设置导入导出文件夹'
+                            : '导入导出目录：${controller.dataTransferDirectoryPath}',
                         style: Theme.of(context).textTheme.bodyMedium?.copyWith(
                               color: Theme.of(context)
                                   .colorScheme
@@ -238,15 +238,7 @@ class _SettingsBody extends StatelessWidget {
     SettingsController controller,
   ) async {
     try {
-      final directoryPath = await FilePicker.platform.getDirectoryPath(
-        initialDirectory: controller.lastTransferDirectoryPath ??
-            controller.backupDirectoryPath,
-      );
-      if (directoryPath == null || directoryPath.trim().isEmpty) {
-        return;
-      }
-      final result =
-          await controller.exportManualDataToDirectory(directoryPath);
+      final result = await controller.exportManualDataToBackupSibling();
       if (!context.mounted) {
         return;
       }
@@ -267,12 +259,25 @@ class _SettingsBody extends StatelessWidget {
     BuildContext context,
     SettingsController controller,
   ) async {
+    late final String directoryPath;
+    try {
+      directoryPath = await controller.ensureDataTransferDirectory();
+    } catch (error) {
+      if (!context.mounted) {
+        return;
+      }
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+            content: Text(error.toString().replaceFirst('Bad state: ', ''))),
+      );
+      return;
+    }
+
     final picked = await FilePicker.platform.pickFiles(
       allowMultiple: true,
       type: FileType.custom,
       allowedExtensions: const ['json', 'csv'],
-      initialDirectory: controller.lastTransferDirectoryPath ??
-          controller.backupDirectoryPath,
+      initialDirectory: directoryPath,
     );
     if (picked == null || picked.files.isEmpty || !context.mounted) {
       return;

@@ -171,6 +171,7 @@ class _ContentList extends StatelessWidget {
                 childrenPadding: const EdgeInsets.fromLTRB(8, 0, 8, 8),
                 children: section.items.map((item) {
                   return ListTile(
+                    isThreeLine: true,
                     title: Text(item.name),
                     subtitle: Text(
                       '${StudyTypeUtils.describeForContent(contentName: item.name, categoryName: controller.categoryNameOf(item.categoryId), fallbackPoints: item.points).shortLabel} · 积分 ${item.points}',

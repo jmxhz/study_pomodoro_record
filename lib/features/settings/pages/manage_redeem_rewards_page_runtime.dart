@@ -45,6 +45,7 @@ class ManageRedeemRewardsPage extends StatelessWidget {
                           return Card(
                             key: ValueKey(item.id ?? item.name),
                             child: ListTile(
+                              isThreeLine: true,
                               leading: const Icon(Icons.drag_indicator),
                               title: Text(item.name),
                               subtitle: Text(
