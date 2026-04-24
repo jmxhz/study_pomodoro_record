@@ -239,7 +239,8 @@ class _SettingsBody extends StatelessWidget {
   ) async {
     try {
       final directoryPath = await FilePicker.platform.getDirectoryPath(
-        initialDirectory: controller.lastTransferDirectoryPath,
+        initialDirectory: controller.lastTransferDirectoryPath ??
+            controller.backupDirectoryPath,
       );
       if (directoryPath == null || directoryPath.trim().isEmpty) {
         return;
@@ -270,7 +271,8 @@ class _SettingsBody extends StatelessWidget {
       allowMultiple: true,
       type: FileType.custom,
       allowedExtensions: const ['json', 'csv'],
-      initialDirectory: controller.lastTransferDirectoryPath,
+      initialDirectory: controller.lastTransferDirectoryPath ??
+          controller.backupDirectoryPath,
     );
     if (picked == null || picked.files.isEmpty || !context.mounted) {
       return;
@@ -335,7 +337,10 @@ class _SettingsBody extends StatelessWidget {
     BuildContext context,
     SettingsController controller,
   ) async {
-    final picked = await FilePicker.platform.getDirectoryPath();
+    final picked = await FilePicker.platform.getDirectoryPath(
+      initialDirectory: controller.backupDirectoryPath ??
+          controller.lastTransferDirectoryPath,
+    );
     if (picked == null || picked.trim().isEmpty) {
       return;
     }

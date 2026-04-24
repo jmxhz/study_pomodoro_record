@@ -311,7 +311,8 @@ class _RecordFormBody extends StatelessWidget {
                       runSpacing: 8,
                       children: controller.categories.map((item) {
                         return ChoiceChip(
-                          label: Text(item.name),
+                          label: _OptionChipLabel(item.name),
+                          showCheckmark: false,
                           selected: controller.selectedCategory?.id == item.id,
                           onSelected: (_) => controller.selectCategory(item),
                         );
@@ -358,7 +359,8 @@ class _RecordFormBody extends StatelessWidget {
                         runSpacing: 8,
                         children: controller.breakOptions.map((item) {
                           return ChoiceChip(
-                            label: Text(item.name),
+                            label: _OptionChipLabel(item.name),
+                            showCheckmark: false,
                             selected:
                                 controller.selectedBreakItem?.id == item.id,
                             onSelected: (_) => controller.selectBreakItem(item),
@@ -725,11 +727,11 @@ class _LifeRecordFormBody extends StatelessWidget {
                   children: [
                     const _SectionTitle(title: '备注'),
                     const SizedBox(height: 8),
-                    TextField(
+                    _BoundTextField(
+                      label: '备注',
+                      value: controller.notes ?? '',
                       onChanged: controller.setNotes,
-                      decoration: const InputDecoration(
-                        hintText: '可选：记录执行细节，例如阻碍点、触发动作或替代动作。',
-                      ),
+                      hintText: '可选：记录执行细节，例如阻碍点、触发动作或替代动作。',
                     ),
                   ],
                 ),
@@ -932,7 +934,8 @@ class _LifeHabitGroups extends StatelessWidget {
                   return Opacity(
                     opacity: canSelect ? 1 : 0.46,
                     child: ChoiceChip(
-                      label: Text(option.name),
+                      label: _OptionChipLabel(option.name),
+                      showCheckmark: false,
                       selected: selected,
                       onSelected: canSelect ? (_) => onSelect(option) : null,
                     ),
@@ -1447,7 +1450,8 @@ class _ContentGroups extends StatelessWidget {
                 children: items.map((item) {
                   final selectable = controller.isContentSelectable(item);
                   return ChoiceChip(
-                    label: Text(item.name),
+                    label: _OptionChipLabel(item.name),
+                    showCheckmark: false,
                     selected: controller.selectedContent?.id == item.id,
                     onSelected: selectable
                         ? (_) => controller.selectContent(item)
@@ -1654,6 +1658,7 @@ class _StudyDetailSectionState extends State<_StudyDetailSection> {
                     hintText:
                         '\u8bb0\u5f55\u672c\u6b21\u5b66\u4e60\u7684\u5173\u952e\u60c5\u51b5\uff0c\u4f8b\u5982\uff1a\u5361\u5728\u54ea\u91cc\u3001\u4e0b\u6b21\u4f18\u5148\u5904\u7406\u4ec0\u4e48\u3002',
                     value: controller.notes ?? '',
+                    resetSignal: controller.formResetToken,
                     onChanged: controller.setNotes,
                   ),
                 ],
@@ -1807,7 +1812,8 @@ class _SingleTagSelector extends StatelessWidget {
               runSpacing: 8,
               children: options.map((item) {
                 return ChoiceChip(
-                  label: Text(item),
+                  label: _OptionChipLabel(item),
+                  showCheckmark: false,
                   selected: selectedTag == item,
                   onSelected: (selected) => onChanged(selected ? item : null),
                 );
@@ -1835,6 +1841,25 @@ class _SectionTitle extends StatelessWidget {
   }
 }
 
+class _OptionChipLabel extends StatelessWidget {
+  const _OptionChipLabel(this.text);
+
+  final String text;
+
+  @override
+  Widget build(BuildContext context) {
+    return ConstrainedBox(
+      constraints: const BoxConstraints(maxWidth: 220),
+      child: Text(
+        text,
+        maxLines: 1,
+        overflow: TextOverflow.ellipsis,
+        softWrap: false,
+      ),
+    );
+  }
+}
+
 class _BoundTextField extends StatefulWidget {
   const _BoundTextField({
     required this.label,
@@ -1842,6 +1867,7 @@ class _BoundTextField extends StatefulWidget {
     required this.onChanged,
     this.hintText,
     this.keyboardType,
+    this.resetSignal = 0,
   });
 
   final String label;
@@ -1849,6 +1875,7 @@ class _BoundTextField extends StatefulWidget {
   final ValueChanged<String> onChanged;
   final String? hintText;
   final TextInputType? keyboardType;
+  final int resetSignal;
 
   @override
   State<_BoundTextField> createState() => _BoundTextFieldState();
@@ -1866,7 +1893,9 @@ class _BoundTextFieldState extends State<_BoundTextField> {
   @override
   void didUpdateWidget(covariant _BoundTextField oldWidget) {
     super.didUpdateWidget(oldWidget);
-    if (oldWidget.value != widget.value && _controller.text != widget.value) {
+    if ((oldWidget.value != widget.value ||
+            oldWidget.resetSignal != widget.resetSignal) &&
+        _controller.text != widget.value) {
       _controller.value = TextEditingValue(
         text: widget.value,
         selection: TextSelection.collapsed(offset: widget.value.length),

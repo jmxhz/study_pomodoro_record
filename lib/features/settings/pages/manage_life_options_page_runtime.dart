@@ -3,6 +3,7 @@ import 'package:provider/provider.dart';
 
 import '../../../data/models/life_option.dart';
 import '../controllers/settings_controller_runtime.dart';
+import '../widgets/option_tile_actions.dart';
 
 class ManageLifeOptionsPage extends StatelessWidget {
   const ManageLifeOptionsPage({super.key});
@@ -87,30 +88,17 @@ class ManageLifeOptionsPage extends StatelessWidget {
                             subtitle: Text(
                               '${item.isEnabled ? '已启用' : '已停用'} · ${item.points} 分',
                             ),
-                            trailing: Wrap(
-                              spacing: 4,
-                              children: [
-                                Switch(
-                                  value: item.isEnabled,
-                                  onChanged: controller.isBusy
-                                      ? null
-                                      : (value) => controller.updateLifeOption(
-                                            item.copyWith(isEnabled: value),
-                                          ),
-                                ),
-                                IconButton(
-                                  tooltip: '编辑',
-                                  onPressed: () => _editLifeOption(
-                                      context, controller, item),
-                                  icon: const Icon(Icons.edit_outlined),
-                                ),
-                                IconButton(
-                                  tooltip: '删除',
-                                  onPressed: () => _deleteLifeOption(
-                                      context, controller, item),
-                                  icon: const Icon(Icons.delete_outline),
-                                ),
-                              ],
+                            trailing: OptionTileActions(
+                              isEnabled: item.isEnabled,
+                              onEnabledChanged: controller.isBusy
+                                  ? null
+                                  : (value) => controller.updateLifeOption(
+                                        item.copyWith(isEnabled: value),
+                                      ),
+                              onEdit: () =>
+                                  _editLifeOption(context, controller, item),
+                              onDelete: () =>
+                                  _deleteLifeOption(context, controller, item),
                             ),
                           ),
                         ),
@@ -175,7 +163,7 @@ class ManageLifeOptionsPage extends StatelessWidget {
     await controller.addLifeOption(
       name: result.name,
       points: result.points,
-      isEnabled: result.isEnabled,
+      isEnabled: true,
     );
   }
 
@@ -189,7 +177,6 @@ class ManageLifeOptionsPage extends StatelessWidget {
       builder: (context) => _LifeOptionDialog(
         initialName: item.name,
         initialPoints: item.points,
-        initialEnabled: item.isEnabled,
       ),
     );
     if (result == null) {
@@ -199,7 +186,7 @@ class ManageLifeOptionsPage extends StatelessWidget {
       item.copyWith(
         name: result.name,
         points: result.points,
-        isEnabled: result.isEnabled,
+        isEnabled: item.isEnabled,
       ),
     );
   }
@@ -283,24 +270,20 @@ class _LifeOptionDialogResult {
   const _LifeOptionDialogResult({
     required this.name,
     required this.points,
-    required this.isEnabled,
   });
 
   final String name;
   final int points;
-  final bool isEnabled;
 }
 
 class _LifeOptionDialog extends StatefulWidget {
   const _LifeOptionDialog({
     this.initialName = '',
     this.initialPoints = 3,
-    this.initialEnabled = true,
   });
 
   final String initialName;
   final int initialPoints;
-  final bool initialEnabled;
 
   @override
   State<_LifeOptionDialog> createState() => _LifeOptionDialogState();
@@ -309,14 +292,12 @@ class _LifeOptionDialog extends StatefulWidget {
 class _LifeOptionDialogState extends State<_LifeOptionDialog> {
   late final TextEditingController _nameController;
   late final TextEditingController _pointsController;
-  late bool _enabled;
 
   @override
   void initState() {
     super.initState();
     _nameController = TextEditingController(text: widget.initialName);
     _pointsController = TextEditingController(text: '${widget.initialPoints}');
-    _enabled = widget.initialEnabled;
   }
 
   @override
@@ -344,17 +325,6 @@ class _LifeOptionDialogState extends State<_LifeOptionDialog> {
             keyboardType: TextInputType.number,
             decoration: const InputDecoration(labelText: '积分'),
           ),
-          const SizedBox(height: 12),
-          SwitchListTile(
-            contentPadding: EdgeInsets.zero,
-            title: const Text('启用'),
-            value: _enabled,
-            onChanged: (value) {
-              setState(() {
-                _enabled = value;
-              });
-            },
-          ),
         ],
       ),
       actions: [
@@ -373,7 +343,6 @@ class _LifeOptionDialogState extends State<_LifeOptionDialog> {
               _LifeOptionDialogResult(
                 name: name,
                 points: points,
-                isEnabled: _enabled,
               ),
             );
           },

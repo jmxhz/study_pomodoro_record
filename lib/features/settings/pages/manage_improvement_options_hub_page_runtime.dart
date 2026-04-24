@@ -3,6 +3,7 @@ import 'package:provider/provider.dart';
 
 import '../../../data/models/improvement_option.dart';
 import '../controllers/settings_controller_runtime.dart';
+import '../widgets/option_tile_actions.dart';
 import '../widgets/setting_dialogs_runtime.dart';
 
 class ManageImprovementOptionsHubPage extends StatelessWidget {
@@ -165,31 +166,18 @@ class _ImprovementSectionPage extends StatelessWidget {
                               leading: const Icon(Icons.drag_indicator),
                               title: Text(item.name),
                               subtitle: Text(item.isEnabled ? '已启用' : '已停用'),
-                              trailing: Wrap(
-                                spacing: 4,
-                                children: [
-                                  Switch(
-                                    value: item.isEnabled,
-                                    onChanged: controller.isBusy
-                                        ? null
-                                        : (value) =>
-                                            controller.updateImprovementOption(
-                                              item.copyWith(isEnabled: value),
-                                            ),
-                                  ),
-                                  IconButton(
-                                    tooltip: '编辑',
-                                    onPressed: () =>
-                                        _editItem(context, controller, item),
-                                    icon: const Icon(Icons.edit_outlined),
-                                  ),
-                                  IconButton(
-                                    tooltip: '删除',
-                                    onPressed: () =>
-                                        _deleteItem(context, controller, item),
-                                    icon: const Icon(Icons.delete_outline),
-                                  ),
-                                ],
+                              trailing: OptionTileActions(
+                                isEnabled: item.isEnabled,
+                                onEnabledChanged: controller.isBusy
+                                    ? null
+                                    : (value) =>
+                                        controller.updateImprovementOption(
+                                          item.copyWith(isEnabled: value),
+                                        ),
+                                onEdit: () =>
+                                    _editItem(context, controller, item),
+                                onDelete: () =>
+                                    _deleteItem(context, controller, item),
                               ),
                             ),
                           );

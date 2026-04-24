@@ -67,6 +67,7 @@ class RecordEntryController extends ChangeNotifier {
   DateTime occurredAt = DateTime.now();
   StudyRecord? editingRecord;
   bool _autoTrackCurrentTime = true;
+  int formResetToken = 0;
 
   bool get isEditMode => recordId != null;
 
@@ -616,6 +617,7 @@ class RecordEntryController extends ChangeNotifier {
     weaknessTags = const [];
     improvementTags = const [];
     notes = null;
+    formResetToken += 1;
   }
 
   void _startClockTicker() {
@@ -766,4 +768,3 @@ class RecordEntryController extends ChangeNotifier {
 extension<T> on Iterable<T> {
   T? get firstOrNull => isEmpty ? null : first;
 }
-

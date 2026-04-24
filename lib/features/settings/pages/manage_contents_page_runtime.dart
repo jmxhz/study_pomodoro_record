@@ -4,6 +4,7 @@ import 'package:provider/provider.dart';
 import '../../../core/utils/study_type_utils.dart';
 import '../../../data/models/content_option.dart';
 import '../controllers/settings_controller_runtime.dart';
+import '../widgets/option_tile_actions.dart';
 import '../widgets/setting_dialogs_runtime.dart';
 
 class ManageContentsPage extends StatelessWidget {
@@ -174,27 +175,13 @@ class _ContentList extends StatelessWidget {
                     subtitle: Text(
                       '${StudyTypeUtils.describeForContent(contentName: item.name, categoryName: controller.categoryNameOf(item.categoryId), fallbackPoints: item.points).shortLabel} · 积分 ${item.points}',
                     ),
-                    trailing: Wrap(
-                      spacing: 2,
-                      crossAxisAlignment: WrapCrossAlignment.center,
-                      children: [
-                        Switch(
-                          value: item.isEnabled,
-                          onChanged: controller.isBusy
-                              ? null
-                              : (value) => onToggleEnabled(item, value),
-                        ),
-                        IconButton(
-                          tooltip: '编辑',
-                          onPressed: () => onEdit(item),
-                          icon: const Icon(Icons.edit_outlined),
-                        ),
-                        IconButton(
-                          tooltip: '删除',
-                          onPressed: () => onDelete(item),
-                          icon: const Icon(Icons.delete_outline),
-                        ),
-                      ],
+                    trailing: OptionTileActions(
+                      isEnabled: item.isEnabled,
+                      onEnabledChanged: controller.isBusy
+                          ? null
+                          : (value) => onToggleEnabled(item, value),
+                      onEdit: () => onEdit(item),
+                      onDelete: () => onDelete(item),
                     ),
                   );
                 }).toList(growable: false),
