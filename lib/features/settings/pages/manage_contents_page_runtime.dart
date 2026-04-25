@@ -180,10 +180,8 @@ class _ContentList extends StatelessWidget {
                   return Padding(
                     padding: const EdgeInsets.only(bottom: 8),
                     child: ManageSettingItemCard(
-                      dragHandle: const Padding(
-                        padding: EdgeInsets.only(top: 4),
-                        child: Icon(Icons.drag_indicator_rounded),
-                      ),
+                      dragHandle:
+                          const Icon(Icons.drag_indicator_rounded),
                       title: item.name,
                       detailLines: ['${desc.shortLabel} · 积分 ${item.points}'],
                       isEnabled: item.isEnabled,

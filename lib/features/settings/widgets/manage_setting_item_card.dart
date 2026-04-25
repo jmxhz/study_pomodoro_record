@@ -30,19 +30,27 @@ class ManageSettingItemCard extends StatelessWidget {
         motion: const DrawerMotion(),
         extentRatio: 0.42,
         children: [
-          SlidableAction(
-            onPressed: onEdit == null ? null : (_) => onEdit!.call(),
-            backgroundColor: theme.colorScheme.secondaryContainer,
-            foregroundColor: theme.colorScheme.onSecondaryContainer,
-            icon: Icons.edit_outlined,
-            label: '编辑',
+          Expanded(
+            child: Padding(
+              padding: const EdgeInsets.only(right: 6),
+              child: _SwipeActionCard(
+                color: theme.colorScheme.secondaryContainer,
+                iconColor: theme.colorScheme.onSecondaryContainer,
+                icon: Icons.edit_outlined,
+                onTap: onEdit,
+              ),
+            ),
           ),
-          SlidableAction(
-            onPressed: onDelete == null ? null : (_) => onDelete!.call(),
-            backgroundColor: theme.colorScheme.errorContainer,
-            foregroundColor: theme.colorScheme.onErrorContainer,
-            icon: Icons.delete_outline,
-            label: '删除',
+          Expanded(
+            child: Padding(
+              padding: const EdgeInsets.only(left: 6),
+              child: _SwipeActionCard(
+                color: theme.colorScheme.errorContainer,
+                iconColor: theme.colorScheme.onErrorContainer,
+                icon: Icons.delete_outline,
+                onTap: onDelete,
+              ),
+            ),
           ),
         ],
       ),
@@ -58,31 +66,37 @@ class ManageSettingItemCard extends StatelessWidget {
         child: Padding(
           padding: const EdgeInsets.fromLTRB(10, 10, 10, 10),
           child: Row(
-            crossAxisAlignment: CrossAxisAlignment.start,
+            crossAxisAlignment: CrossAxisAlignment.center,
             children: [
               SizedBox(
                 width: 28,
                 child: Align(
-                  alignment: Alignment.topCenter,
+                  alignment: Alignment.center,
                   child: dragHandle,
                 ),
               ),
               const SizedBox(width: 8),
               Expanded(
                 child: Column(
+                  mainAxisSize: MainAxisSize.min,
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
                       title,
-                      style: theme.textTheme.titleLarge,
+                      style: theme.textTheme.titleMedium?.copyWith(
+                        fontSize: 18,
+                        fontWeight: FontWeight.w600,
+                        height: 1.2,
+                      ),
                       maxLines: 2,
                       overflow: TextOverflow.ellipsis,
                     ),
-                    const SizedBox(height: 4),
+                    const SizedBox(height: 6),
                     for (var i = 0; i < detailLines.length; i++) ...[
                       Text(
                         detailLines[i],
-                        style: theme.textTheme.bodyLarge?.copyWith(
+                        style: theme.textTheme.bodyMedium?.copyWith(
+                          fontSize: 14,
                           color: theme.colorScheme.onSurfaceVariant,
                           height: 1.25,
                         ),
@@ -94,24 +108,54 @@ class ManageSettingItemCard extends StatelessWidget {
               ),
               const SizedBox(width: 8),
               SizedBox(
-                width: 90,
+                width: 78,
                 child: Align(
-                  alignment: Alignment.topRight,
-                  child: SizedBox(
-                    height: 38,
-                    child: Transform.scale(
-                      scale: 0.86,
-                      alignment: Alignment.centerRight,
-                      child: Switch(
-                        value: isEnabled,
-                        onChanged: onEnabledChanged,
-                      ),
+                  alignment: Alignment.center,
+                  child: Transform.scale(
+                    scale: 0.95,
+                    child: Switch(
+                      value: isEnabled,
+                      onChanged: onEnabledChanged,
                     ),
                   ),
                 ),
               ),
             ],
           ),
+        ),
+      ),
+    );
+  }
+}
+
+class _SwipeActionCard extends StatelessWidget {
+  const _SwipeActionCard({
+    required this.color,
+    required this.iconColor,
+    required this.icon,
+    required this.onTap,
+  });
+
+  final Color color;
+  final Color iconColor;
+  final IconData icon;
+  final VoidCallback? onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    return CustomSlidableAction(
+      onPressed: onTap == null ? null : (_) => onTap!.call(),
+      padding: EdgeInsets.zero,
+      child: Container(
+        decoration: BoxDecoration(
+          color: color,
+          borderRadius: BorderRadius.circular(24),
+        ),
+        alignment: Alignment.center,
+        child: Icon(
+          icon,
+          size: 28,
+          color: iconColor,
         ),
       ),
     );

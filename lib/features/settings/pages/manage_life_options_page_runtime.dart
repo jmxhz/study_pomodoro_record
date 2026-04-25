@@ -85,10 +85,8 @@ class ManageLifeOptionsPage extends StatelessWidget {
                         (item) => Padding(
                           padding: const EdgeInsets.only(bottom: 12),
                           child: ManageSettingItemCard(
-                            dragHandle: const Padding(
-                              padding: EdgeInsets.only(top: 4),
-                              child: Icon(Icons.drag_indicator_rounded),
-                            ),
+                            dragHandle:
+                                const Icon(Icons.drag_indicator_rounded),
                             title: item.name,
                             detailLines: [
                               '${item.isEnabled ? '已启用' : '已停用'} · ${item.points} 分',

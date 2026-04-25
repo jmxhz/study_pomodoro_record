@@ -52,10 +52,7 @@ class ManageRedeemRewardsPage extends StatelessWidget {
                             child: ManageSettingItemCard(
                               dragHandle: ReorderableDelayedDragStartListener(
                                 index: index,
-                                child: const Padding(
-                                  padding: EdgeInsets.only(top: 4),
-                                  child: Icon(Icons.drag_indicator_rounded),
-                                ),
+                                child: const Icon(Icons.drag_indicator_rounded),
                               ),
                               title: item.name,
                               detailLines: detailLines,
