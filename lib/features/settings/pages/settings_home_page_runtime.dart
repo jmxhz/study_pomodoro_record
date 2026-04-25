@@ -164,9 +164,9 @@ class _SettingsBody extends StatelessWidget {
                       ),
                       const SizedBox(height: 8),
                       Text(
-                        controller.dataTransferDirectoryPath == null
+                        controller.transferDirectoryPath == null
                             ? '当前未设置导入导出文件夹'
-                            : '导入导出目录：${controller.dataTransferDirectoryPath}',
+                            : '导入导出目录：${controller.transferDirectoryPath}',
                         style: Theme.of(context).textTheme.bodyMedium?.copyWith(
                               color: Theme.of(context)
                                   .colorScheme
@@ -238,7 +238,7 @@ class _SettingsBody extends StatelessWidget {
     SettingsController controller,
   ) async {
     try {
-      final result = await controller.exportManualDataToBackupSibling();
+      final result = await controller.exportManualDataToTransferDirectory();
       if (!context.mounted) {
         return;
       }
@@ -261,7 +261,7 @@ class _SettingsBody extends StatelessWidget {
   ) async {
     late final String directoryPath;
     try {
-      directoryPath = await controller.ensureDataTransferDirectory();
+      directoryPath = controller.requireTransferDirectoryPath();
     } catch (error) {
       if (!context.mounted) {
         return;
