@@ -3,7 +3,7 @@ import 'package:provider/provider.dart';
 
 import '../../../data/models/reward_option.dart';
 import '../controllers/settings_controller_runtime.dart';
-import '../widgets/option_tile_actions.dart';
+import '../widgets/manage_setting_item_card.dart';
 import '../widgets/setting_dialogs_runtime.dart';
 
 class ManageBreakItemsPage extends StatelessWidget {
@@ -46,7 +46,7 @@ class ManageBreakItemsPage extends StatelessWidget {
                 child: items.isEmpty
                     ? Center(child: Text('暂无$itemLabel选项'))
                     : ReorderableListView.builder(
-                        padding: const EdgeInsets.all(16),
+                        padding: const EdgeInsets.fromLTRB(16, 12, 16, 16),
                         itemCount: items.length,
                         onReorder: (oldIndex, newIndex) {
                           controller.reorderBreaksByType(
@@ -54,26 +54,30 @@ class ManageBreakItemsPage extends StatelessWidget {
                         },
                         itemBuilder: (context, index) {
                           final item = items[index];
-                          return Card(
+                          return Padding(
                             key: ValueKey(
                                 '${item.type}-${item.id ?? item.name}'),
-                            child: ListTile(
-                              isThreeLine: true,
-                              leading: const Icon(Icons.drag_indicator),
-                              title: Text(item.name),
-                              subtitle: Text(item.isEnabled ? '已启用' : '已停用'),
-                              trailing: OptionTileActions(
-                                isEnabled: item.isEnabled,
-                                onEnabledChanged: controller.isBusy
-                                    ? null
-                                    : (value) => controller.updateReward(
-                                          item.copyWith(isEnabled: value),
-                                        ),
-                                onEdit: () =>
-                                    _editItem(context, controller, item),
-                                onDelete: () =>
-                                    _deleteItem(context, controller, item),
+                            padding: const EdgeInsets.only(bottom: 12),
+                            child: ManageSettingItemCard(
+                              dragHandle: ReorderableDelayedDragStartListener(
+                                index: index,
+                                child: const Padding(
+                                  padding: EdgeInsets.only(top: 4),
+                                  child: Icon(Icons.drag_indicator_rounded),
+                                ),
                               ),
+                              title: item.name,
+                              detailLines: [item.isEnabled ? '已启用' : '已停用'],
+                              isEnabled: item.isEnabled,
+                              onEnabledChanged: controller.isBusy
+                                  ? null
+                                  : (value) => controller.updateReward(
+                                        item.copyWith(isEnabled: value),
+                                      ),
+                              onEdit: () =>
+                                  _editItem(context, controller, item),
+                              onDelete: () =>
+                                  _deleteItem(context, controller, item),
                             ),
                           );
                         },
@@ -87,7 +91,9 @@ class ManageBreakItemsPage extends StatelessWidget {
   }
 
   Future<void> _addItem(
-      BuildContext context, SettingsController controller) async {
+    BuildContext context,
+    SettingsController controller,
+  ) async {
     final result = await showDialog<SimpleOptionDialogResult>(
       context: context,
       builder: (context) => SimpleOptionDialog(

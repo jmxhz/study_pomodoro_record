@@ -4,7 +4,7 @@ import 'package:provider/provider.dart';
 import '../../../core/utils/study_type_utils.dart';
 import '../../../data/models/content_option.dart';
 import '../controllers/settings_controller_runtime.dart';
-import '../widgets/option_tile_actions.dart';
+import '../widgets/manage_setting_item_card.dart';
 import '../widgets/setting_dialogs_runtime.dart';
 
 class ManageContentsPage extends StatelessWidget {
@@ -48,7 +48,9 @@ class ManageContentsPage extends StatelessWidget {
   }
 
   Future<void> _addContent(
-      BuildContext context, SettingsController controller) async {
+    BuildContext context,
+    SettingsController controller,
+  ) async {
     final result = await showDialog<ContentOptionDialogResult>(
       context: context,
       builder: (context) =>
@@ -150,7 +152,7 @@ class _ContentList extends StatelessWidget {
       itemBuilder: (context, index) {
         if (index == 0) {
           return Text(
-            '默认收起；每个分组内固定按积分从小到大排列。',
+            '默认收起；每个分组内固定按积分从小到大排序。',
             style: Theme.of(context).textTheme.bodyMedium,
           );
         }
@@ -170,13 +172,20 @@ class _ContentList extends StatelessWidget {
                 subtitle: Text('${section.items.length} 项'),
                 childrenPadding: const EdgeInsets.fromLTRB(8, 0, 8, 8),
                 children: section.items.map((item) {
-                  return ListTile(
-                    isThreeLine: true,
-                    title: Text(item.name),
-                    subtitle: Text(
-                      '${StudyTypeUtils.describeForContent(contentName: item.name, categoryName: controller.categoryNameOf(item.categoryId), fallbackPoints: item.points).shortLabel} · 积分 ${item.points}',
-                    ),
-                    trailing: OptionTileActions(
+                  final desc = StudyTypeUtils.describeForContent(
+                    contentName: item.name,
+                    categoryName: controller.categoryNameOf(item.categoryId),
+                    fallbackPoints: item.points,
+                  );
+                  return Padding(
+                    padding: const EdgeInsets.only(bottom: 8),
+                    child: ManageSettingItemCard(
+                      dragHandle: const Padding(
+                        padding: EdgeInsets.only(top: 4),
+                        child: Icon(Icons.drag_indicator_rounded),
+                      ),
+                      title: item.name,
+                      detailLines: ['${desc.shortLabel} · 积分 ${item.points}'],
                       isEnabled: item.isEnabled,
                       onEnabledChanged: controller.isBusy
                           ? null

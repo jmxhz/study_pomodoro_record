@@ -3,7 +3,7 @@ import 'package:provider/provider.dart';
 
 import '../../../data/models/life_option.dart';
 import '../controllers/settings_controller_runtime.dart';
-import '../widgets/option_tile_actions.dart';
+import '../widgets/manage_setting_item_card.dart';
 
 class ManageLifeOptionsPage extends StatelessWidget {
   const ManageLifeOptionsPage({super.key});
@@ -82,25 +82,27 @@ class ManageLifeOptionsPage extends StatelessWidget {
                       const Center(child: Text('暂无生活记录项'))
                     else
                       ...sortedOptions.map(
-                        (item) => Card(
-                          child: ListTile(
-                            isThreeLine: true,
-                            title: Text(item.name),
-                            subtitle: Text(
+                        (item) => Padding(
+                          padding: const EdgeInsets.only(bottom: 12),
+                          child: ManageSettingItemCard(
+                            dragHandle: const Padding(
+                              padding: EdgeInsets.only(top: 4),
+                              child: Icon(Icons.drag_indicator_rounded),
+                            ),
+                            title: item.name,
+                            detailLines: [
                               '${item.isEnabled ? '已启用' : '已停用'} · ${item.points} 分',
-                            ),
-                            trailing: OptionTileActions(
-                              isEnabled: item.isEnabled,
-                              onEnabledChanged: controller.isBusy
-                                  ? null
-                                  : (value) => controller.updateLifeOption(
-                                        item.copyWith(isEnabled: value),
-                                      ),
-                              onEdit: () =>
-                                  _editLifeOption(context, controller, item),
-                              onDelete: () =>
-                                  _deleteLifeOption(context, controller, item),
-                            ),
+                            ],
+                            isEnabled: item.isEnabled,
+                            onEnabledChanged: controller.isBusy
+                                ? null
+                                : (value) => controller.updateLifeOption(
+                                      item.copyWith(isEnabled: value),
+                                    ),
+                            onEdit: () =>
+                                _editLifeOption(context, controller, item),
+                            onDelete: () =>
+                                _deleteLifeOption(context, controller, item),
                           ),
                         ),
                       ),

@@ -1,4 +1,4 @@
-﻿import 'package:flutter/material.dart';
+import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
 import '../controllers/settings_controller_runtime.dart';
@@ -26,7 +26,8 @@ class ManageFeedbackPage extends StatelessWidget {
                     ListTile(
                       leading: const Icon(Icons.free_breakfast_outlined),
                       title: const Text('短休息管理'),
-                      subtitle: Text('当前 ${controller.shortBreakOptions.length} 项'),
+                      subtitle:
+                          Text('当前 ${controller.shortBreakOptions.length} 项'),
                       trailing: const Icon(Icons.chevron_right),
                       onTap: () {
                         Navigator.of(context).push(
@@ -43,7 +44,8 @@ class ManageFeedbackPage extends StatelessWidget {
                     ListTile(
                       leading: const Icon(Icons.weekend_outlined),
                       title: const Text('长休息管理'),
-                      subtitle: Text('当前 ${controller.longBreakOptions.length} 项'),
+                      subtitle:
+                          Text('当前 ${controller.longBreakOptions.length} 项'),
                       trailing: const Icon(Icons.chevron_right),
                       onTap: () {
                         Navigator.of(context).push(
@@ -60,7 +62,8 @@ class ManageFeedbackPage extends StatelessWidget {
                     ListTile(
                       leading: const Icon(Icons.tune_outlined),
                       title: const Text('长休息触发阈值'),
-                      subtitle: Text('每完成 ${controller.longBreakEvery} 个番茄后进入一次长休息'),
+                      subtitle:
+                          Text('每完成 ${controller.longBreakEvery} 个番茄后进入一次长休息'),
                       trailing: DropdownButton<int>(
                         value: controller.longBreakEvery,
                         underline: const SizedBox.shrink(),

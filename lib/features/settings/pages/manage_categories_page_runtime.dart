@@ -3,7 +3,7 @@ import 'package:provider/provider.dart';
 
 import '../../../data/models/category_option.dart';
 import '../controllers/settings_controller_runtime.dart';
-import '../widgets/option_tile_actions.dart';
+import '../widgets/manage_setting_item_card.dart';
 import '../widgets/setting_dialogs_runtime.dart';
 
 class ManageCategoriesPage extends StatelessWidget {
@@ -33,30 +33,34 @@ class ManageCategoriesPage extends StatelessWidget {
                 child: controller.categories.isEmpty
                     ? const Center(child: Text('暂无分类'))
                     : ReorderableListView.builder(
-                        padding: const EdgeInsets.all(16),
+                        padding: const EdgeInsets.fromLTRB(16, 12, 16, 16),
                         itemCount: controller.categories.length,
                         onReorder: controller.reorderCategories,
                         itemBuilder: (context, index) {
                           final item = controller.categories[index];
-                          return Card(
+                          return Padding(
                             key: ValueKey(item.id ?? item.name),
-                            child: ListTile(
-                              isThreeLine: true,
-                              leading: const Icon(Icons.drag_indicator),
-                              title: Text(item.name),
-                              subtitle: Text(item.isEnabled ? '已启用' : '已停用'),
-                              trailing: OptionTileActions(
-                                isEnabled: item.isEnabled,
-                                onEnabledChanged: controller.isBusy
-                                    ? null
-                                    : (value) => controller.updateCategory(
-                                          item.copyWith(isEnabled: value),
-                                        ),
-                                onEdit: () =>
-                                    _editCategory(context, controller, item),
-                                onDelete: () =>
-                                    _deleteCategory(context, controller, item),
+                            padding: const EdgeInsets.only(bottom: 12),
+                            child: ManageSettingItemCard(
+                              dragHandle: ReorderableDelayedDragStartListener(
+                                index: index,
+                                child: const Padding(
+                                  padding: EdgeInsets.only(top: 4),
+                                  child: Icon(Icons.drag_indicator_rounded),
+                                ),
                               ),
+                              title: item.name,
+                              detailLines: [item.isEnabled ? '已启用' : '已停用'],
+                              isEnabled: item.isEnabled,
+                              onEnabledChanged: controller.isBusy
+                                  ? null
+                                  : (value) => controller.updateCategory(
+                                        item.copyWith(isEnabled: value),
+                                      ),
+                              onEdit: () =>
+                                  _editCategory(context, controller, item),
+                              onDelete: () =>
+                                  _deleteCategory(context, controller, item),
                             ),
                           );
                         },

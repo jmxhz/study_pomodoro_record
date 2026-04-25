@@ -3,7 +3,7 @@ import 'package:provider/provider.dart';
 
 import '../../../data/models/redeem_reward.dart';
 import '../controllers/settings_controller_runtime.dart';
-import '../widgets/option_tile_actions.dart';
+import '../widgets/manage_setting_item_card.dart';
 import '../widgets/setting_dialogs_runtime.dart';
 
 class ManageRedeemRewardsPage extends StatelessWidget {
@@ -33,36 +33,42 @@ class ManageRedeemRewardsPage extends StatelessWidget {
                 child: controller.redeemRewards.isEmpty
                     ? const Center(child: Text('暂无奖励兑换项'))
                     : ReorderableListView.builder(
-                        padding: const EdgeInsets.all(16),
+                        padding: const EdgeInsets.fromLTRB(16, 12, 16, 16),
                         itemCount: controller.redeemRewards.length,
                         onReorder: controller.reorderRedeemRewards,
                         itemBuilder: (context, index) {
                           final item = controller.redeemRewards[index];
-                          final noteText =
-                              item.note == null || item.note!.isEmpty
-                                  ? ''
-                                  : ' · ${item.note}';
-                          return Card(
+                          final detailLine1 =
+                              '${item.costPoints} 分 · ${item.isEnabled ? '已启用' : '已停用'}';
+                          final detailLines = <String>[detailLine1];
+                          if (item.note != null &&
+                              item.note!.trim().isNotEmpty) {
+                            detailLines.add(item.note!.trim());
+                          }
+
+                          return Padding(
                             key: ValueKey(item.id ?? item.name),
-                            child: ListTile(
-                              isThreeLine: true,
-                              leading: const Icon(Icons.drag_indicator),
-                              title: Text(item.name),
-                              subtitle: Text(
-                                '${item.costPoints} 分 · ${item.isEnabled ? '已启用' : '已停用'}$noteText',
+                            padding: const EdgeInsets.only(bottom: 12),
+                            child: ManageSettingItemCard(
+                              dragHandle: ReorderableDelayedDragStartListener(
+                                index: index,
+                                child: const Padding(
+                                  padding: EdgeInsets.only(top: 4),
+                                  child: Icon(Icons.drag_indicator_rounded),
+                                ),
                               ),
-                              trailing: OptionTileActions(
-                                isEnabled: item.isEnabled,
-                                onEnabledChanged: controller.isBusy
-                                    ? null
-                                    : (value) => controller.updateRedeemReward(
-                                          item.copyWith(isEnabled: value),
-                                        ),
-                                onEdit: () =>
-                                    _editItem(context, controller, item),
-                                onDelete: () =>
-                                    _deleteItem(context, controller, item),
-                              ),
+                              title: item.name,
+                              detailLines: detailLines,
+                              isEnabled: item.isEnabled,
+                              onEnabledChanged: controller.isBusy
+                                  ? null
+                                  : (value) => controller.updateRedeemReward(
+                                        item.copyWith(isEnabled: value),
+                                      ),
+                              onEdit: () =>
+                                  _editItem(context, controller, item),
+                              onDelete: () =>
+                                  _deleteItem(context, controller, item),
                             ),
                           );
                         },
@@ -76,7 +82,9 @@ class ManageRedeemRewardsPage extends StatelessWidget {
   }
 
   Future<void> _addItem(
-      BuildContext context, SettingsController controller) async {
+    BuildContext context,
+    SettingsController controller,
+  ) async {
     final result = await showDialog<RedeemRewardDialogResult>(
       context: context,
       builder: (context) => const RedeemRewardDialog(),
