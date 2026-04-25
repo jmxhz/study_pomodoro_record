@@ -27,30 +27,41 @@ class ManageSettingItemCard extends StatelessWidget {
 
     return Slidable(
       endActionPane: ActionPane(
-        motion: const DrawerMotion(),
+        motion: const BehindMotion(),
         extentRatio: 0.42,
         children: [
-          SlidableAction(
+          CustomSlidableAction(
             onPressed: onEdit == null ? null : (_) => onEdit!.call(),
             backgroundColor: theme.colorScheme.secondaryContainer,
             foregroundColor: theme.colorScheme.onSecondaryContainer,
-            borderRadius: BorderRadius.circular(24),
-            padding: const EdgeInsets.only(right: 6),
-            icon: Icons.edit_outlined,
-            label: '',
-            spacing: 0,
+            borderRadius: BorderRadius.zero,
+            padding: EdgeInsets.zero,
             autoClose: true,
+            child: Center(
+              child: Icon(
+                Icons.edit_outlined,
+                size: 30,
+                color: theme.colorScheme.onSecondaryContainer,
+              ),
+            ),
           ),
-          SlidableAction(
+          CustomSlidableAction(
             onPressed: onDelete == null ? null : (_) => onDelete!.call(),
             backgroundColor: theme.colorScheme.errorContainer,
             foregroundColor: theme.colorScheme.onErrorContainer,
-            borderRadius: BorderRadius.circular(24),
-            padding: const EdgeInsets.only(left: 6),
-            icon: Icons.delete_outline,
-            label: '',
-            spacing: 0,
+            borderRadius: const BorderRadius.only(
+              topRight: Radius.circular(24),
+              bottomRight: Radius.circular(24),
+            ),
+            padding: EdgeInsets.zero,
             autoClose: true,
+            child: Center(
+              child: Icon(
+                Icons.delete_outline,
+                size: 30,
+                color: theme.colorScheme.onErrorContainer,
+              ),
+            ),
           ),
         ],
       ),
