@@ -496,23 +496,29 @@ class CsvService {
     if (resolvedDirectoryPath == null || resolvedDirectoryPath.trim().isEmpty) {
       throw const FileSystemException('尚未设置备份文件夹，请先在设置页选择一次备份文件夹。');
     }
-    if (rememberDirectory && optionsRepository != null) {
-      await optionsRepository!.setBackupDirectoryPath(resolvedDirectoryPath);
-    }
-
     final directory = Directory(resolvedDirectoryPath);
-    await directory.create(recursive: true);
-    final file = File(p.join(directory.path, fileName ?? autoBackupFileName));
-    final payload = await buildBackupPayload();
-    await file.writeAsString(
-      const JsonEncoder.withIndent('  ').convert(payload),
-      flush: true,
-    );
-    return CsvExportResult(
-      directory: directory,
-      files: [file],
-      primaryFile: file,
-    );
+    try {
+      await directory.create(recursive: true);
+      final file = File(p.join(directory.path, fileName ?? autoBackupFileName));
+      final payload = await buildBackupPayload();
+      await file.writeAsString(
+        const JsonEncoder.withIndent('  ').convert(payload),
+        flush: true,
+      );
+      if (rememberDirectory && optionsRepository != null) {
+        await optionsRepository!.setBackupDirectoryPath(resolvedDirectoryPath);
+      }
+      return CsvExportResult(
+        directory: directory,
+        files: [file],
+        primaryFile: file,
+      );
+    } on FileSystemException catch (error) {
+      final message = error.osError?.errorCode == 13
+          ? '没有写入该目录的权限，请在“更换备份文件夹”中选择应用可写目录后重试。'
+          : error.message;
+      throw FileSystemException(message, error.path, error.osError);
+    }
   }
 
   Future<CsvExportResult?> exportAutoBackupIfConfigured() async {
@@ -1155,7 +1161,9 @@ class CsvService {
         final feedbackName = _parseNullableText(
           row[hasBreakType ? breakOffset + 2 : 9 + offset],
         );
-        if (rewardName == null && feedbackName == null && recordKind != 'life') {
+        if (rewardName == null &&
+            feedbackName == null &&
+            recordKind != 'life') {
           throw const FormatException('字段 reward_name_snapshot 不能为空。');
         }
         return StudyRecord(

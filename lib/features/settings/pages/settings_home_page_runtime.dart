@@ -1,5 +1,8 @@
+import 'dart:io';
+
 import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
+import 'package:permission_handler/permission_handler.dart';
 import 'package:provider/provider.dart';
 
 import '../../../app/app_services.dart';
@@ -201,13 +204,6 @@ class _SettingsBody extends StatelessWidget {
                   ),
                 ),
               ),
-              if (controller.errorMessage != null) ...[
-                const SizedBox(height: 16),
-                Text(
-                  controller.errorMessage!,
-                  style: TextStyle(color: Theme.of(context).colorScheme.error),
-                ),
-              ],
             ],
           ),
         );
@@ -237,6 +233,10 @@ class _SettingsBody extends StatelessWidget {
     BuildContext context,
     SettingsController controller,
   ) async {
+    final allowed = await _ensureStoragePermission(context);
+    if (!allowed) {
+      return;
+    }
     try {
       final result = await controller.exportManualDataToTransferDirectory();
       if (!context.mounted) {
@@ -250,7 +250,7 @@ class _SettingsBody extends StatelessWidget {
         return;
       }
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(error.toString())),
+        SnackBar(content: Text(_formatError(error))),
       );
     }
   }
@@ -331,9 +331,7 @@ class _SettingsBody extends StatelessWidget {
         return;
       }
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-            content:
-                Text(error.toString().replaceFirst('FormatException: ', ''))),
+        SnackBar(content: Text(_formatError(error))),
       );
     }
   }
@@ -342,6 +340,10 @@ class _SettingsBody extends StatelessWidget {
     BuildContext context,
     SettingsController controller,
   ) async {
+    final allowed = await _ensureStoragePermission(context);
+    if (!allowed) {
+      return;
+    }
     final picked = await FilePicker.platform.getDirectoryPath(
       initialDirectory: controller.backupDirectoryPath ??
           controller.lastTransferDirectoryPath,
@@ -362,9 +364,58 @@ class _SettingsBody extends StatelessWidget {
         return;
       }
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(error.toString())),
+        SnackBar(content: Text(_formatError(error))),
       );
     }
+  }
+
+  String _formatError(Object error) {
+    final text = error.toString();
+    return text
+        .replaceFirst('Bad state: ', '')
+        .replaceFirst('FileSystemException: ', '')
+        .replaceFirst('FormatException: ', '');
+  }
+
+  Future<bool> _ensureStoragePermission(BuildContext context) async {
+    if (!Platform.isAndroid) {
+      return true;
+    }
+
+    if (await Permission.manageExternalStorage.isGranted) {
+      return true;
+    }
+
+    final manageStatus = await Permission.manageExternalStorage.request();
+    if (manageStatus.isGranted) {
+      return true;
+    }
+
+    final storageStatus = await Permission.storage.request();
+    if (storageStatus.isGranted) {
+      return true;
+    }
+
+    if (!context.mounted) {
+      return false;
+    }
+
+    final shouldOpenSettings = manageStatus.isPermanentlyDenied ||
+        storageStatus.isPermanentlyDenied ||
+        manageStatus.isRestricted ||
+        storageStatus.isRestricted;
+    if (shouldOpenSettings) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('请在系统设置中允许“文件和媒体”权限后再试。')),
+      );
+      await openAppSettings();
+      return false;
+    }
+
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(content: Text('未授予存储权限，无法导出或设置备份目录。')),
+    );
+    return false;
   }
 }
 

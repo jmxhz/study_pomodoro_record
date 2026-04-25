@@ -673,7 +673,6 @@ class SettingsController extends ChangeNotifier {
   Future<CsvExportResult> exportAllDataToDirectory(String directoryPath) async {
     late CsvExportResult result;
     await _runBusyAction(() async {
-      await optionsRepository.setBackupDirectoryPath(directoryPath);
       result = await csvService.exportAllData(
         directoryPath: directoryPath,
         rememberDirectory: true,
