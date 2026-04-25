@@ -30,27 +30,27 @@ class ManageSettingItemCard extends StatelessWidget {
         motion: const DrawerMotion(),
         extentRatio: 0.42,
         children: [
-          Expanded(
-            child: Padding(
-              padding: const EdgeInsets.only(right: 6),
-              child: _SwipeActionCard(
-                color: theme.colorScheme.secondaryContainer,
-                iconColor: theme.colorScheme.onSecondaryContainer,
-                icon: Icons.edit_outlined,
-                onTap: onEdit,
-              ),
-            ),
+          SlidableAction(
+            onPressed: onEdit == null ? null : (_) => onEdit!.call(),
+            backgroundColor: theme.colorScheme.secondaryContainer,
+            foregroundColor: theme.colorScheme.onSecondaryContainer,
+            borderRadius: BorderRadius.circular(24),
+            padding: const EdgeInsets.only(right: 6),
+            icon: Icons.edit_outlined,
+            label: '',
+            spacing: 0,
+            autoClose: true,
           ),
-          Expanded(
-            child: Padding(
-              padding: const EdgeInsets.only(left: 6),
-              child: _SwipeActionCard(
-                color: theme.colorScheme.errorContainer,
-                iconColor: theme.colorScheme.onErrorContainer,
-                icon: Icons.delete_outline,
-                onTap: onDelete,
-              ),
-            ),
+          SlidableAction(
+            onPressed: onDelete == null ? null : (_) => onDelete!.call(),
+            backgroundColor: theme.colorScheme.errorContainer,
+            foregroundColor: theme.colorScheme.onErrorContainer,
+            borderRadius: BorderRadius.circular(24),
+            padding: const EdgeInsets.only(left: 6),
+            icon: Icons.delete_outline,
+            label: '',
+            spacing: 0,
+            autoClose: true,
           ),
         ],
       ),
@@ -122,40 +122,6 @@ class ManageSettingItemCard extends StatelessWidget {
               ),
             ],
           ),
-        ),
-      ),
-    );
-  }
-}
-
-class _SwipeActionCard extends StatelessWidget {
-  const _SwipeActionCard({
-    required this.color,
-    required this.iconColor,
-    required this.icon,
-    required this.onTap,
-  });
-
-  final Color color;
-  final Color iconColor;
-  final IconData icon;
-  final VoidCallback? onTap;
-
-  @override
-  Widget build(BuildContext context) {
-    return CustomSlidableAction(
-      onPressed: onTap == null ? null : (_) => onTap!.call(),
-      padding: EdgeInsets.zero,
-      child: Container(
-        decoration: BoxDecoration(
-          color: color,
-          borderRadius: BorderRadius.circular(24),
-        ),
-        alignment: Alignment.center,
-        child: Icon(
-          icon,
-          size: 28,
-          color: iconColor,
         ),
       ),
     );
