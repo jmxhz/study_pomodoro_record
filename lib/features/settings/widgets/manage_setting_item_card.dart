@@ -34,7 +34,10 @@ class ManageSettingItemCard extends StatelessWidget {
             onPressed: onEdit == null ? null : (_) => onEdit!.call(),
             backgroundColor: theme.colorScheme.secondaryContainer,
             foregroundColor: theme.colorScheme.onSecondaryContainer,
-            borderRadius: BorderRadius.zero,
+            borderRadius: const BorderRadius.only(
+              topLeft: Radius.circular(24),
+              bottomLeft: Radius.circular(24),
+            ),
             padding: EdgeInsets.zero,
             autoClose: true,
             child: Center(
