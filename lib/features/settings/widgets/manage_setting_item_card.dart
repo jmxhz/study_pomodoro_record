@@ -28,22 +28,22 @@ class ManageSettingItemCard extends StatelessWidget {
     return Slidable(
       endActionPane: ActionPane(
         motion: const BehindMotion(),
-        extentRatio: 0.42,
+        extentRatio: 0.44,
         children: [
           CustomSlidableAction(
             onPressed: onEdit == null ? null : (_) => onEdit!.call(),
             backgroundColor: theme.colorScheme.secondaryContainer,
             foregroundColor: theme.colorScheme.onSecondaryContainer,
             borderRadius: const BorderRadius.only(
-              topLeft: Radius.circular(24),
-              bottomLeft: Radius.circular(24),
+              topLeft: Radius.circular(28),
+              bottomLeft: Radius.circular(28),
             ),
-            padding: EdgeInsets.zero,
+            padding: const EdgeInsets.only(left: -2),
             autoClose: true,
             child: Center(
               child: Icon(
                 Icons.edit_outlined,
-                size: 30,
+                size: 32,
                 color: theme.colorScheme.onSecondaryContainer,
               ),
             ),
@@ -61,7 +61,7 @@ class ManageSettingItemCard extends StatelessWidget {
             child: Center(
               child: Icon(
                 Icons.delete_outline,
-                size: 30,
+                size: 32,
                 color: theme.colorScheme.onErrorContainer,
               ),
             ),
